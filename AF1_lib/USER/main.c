@@ -107,6 +107,7 @@ u8 rs485buf[LEN],lon=LEN;
 int rs485_trans_order(u8 *);
 int subcontrol(u8,u8);
 
+#define ID  3
 /////////////////////////////////////////////
 int main(void)
  {	 
@@ -119,7 +120,7 @@ int main(void)
 
 	RS485_Init(9600);	//初始化RS485
 	TIM3_Int_Init(4999,7199);//10Khz的计数频率，计数5K次为500ms  
-	 initmybox();
+	 initmybox(ID);
 	OSInit();  	 			//初始化UCOSII
 			  
  	OSTaskCreate(start_task,(void *)0,(OS_STK *)&START_TASK_STK[START_STK_SIZE-1],START_TASK_PRIO );//创建起始任务

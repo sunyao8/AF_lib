@@ -27,7 +27,7 @@
   u8 end;   
 }box;
 #define LEN 7
-#define ID  3
+
 #define MASTER_TASK_PRIO       			3 
 
 #define RS485_TX_EN		PGout(9)	//485模式控制.0,接收;1,发送.
@@ -40,8 +40,8 @@
 
 
 void modfiy_token_array(u8,u8);
-void turn_master_id(void);
-void initmybox(void);
+void turn_master_id(u8);
+void initmybox(u8);
 void TIM3_Int_Init(u16,u16);
 void order_trans_rs485(u8,u8,u8,u8,u8,u8,u8);
 #endif	   

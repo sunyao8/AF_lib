@@ -57,7 +57,7 @@ box mybox;
 		if(dog_clock==0)
 		   { 
 		    LED0=!LED0;
-			turn_master_id();
+			turn_master_id(mybox.myid);
 			  cont++;
 			}
 			if(dog_clock>0)dog_clock--;
@@ -107,7 +107,7 @@ void RS485_Send_Data(u8 *buf,u8 len)
 
 }
 
-void initmybox()//初始化自身信息
+void initmybox(u8 id)//初始化自身信息
 {  	 
   u8 i;
   
@@ -117,7 +117,7 @@ void initmybox()//初始化自身信息
   mybox.master=0;
    token[1]=1;
  mybox.start='&';
- mybox.myid=ID;
+ mybox.myid=id;
  mybox.source=0;
  mybox.destination=0;
  mybox.send=0;
@@ -126,20 +126,19 @@ void initmybox()//初始化自身信息
  mybox.end='*';	
 						
 }
-void turn_master_id()//改变当前整个系统中主机的ID号
+void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 {
 u8 i,j,flag=0;
-
 for(i=1;i<33;i++)
 if(token[i]==1)
 	{ 
 	  flag=i+cont;
-      if(ID==(flag)){
+      if(id==(flag)){
         token[i]=0;
-		token[ID]=1;
+		token[id]=1;
 		cont=0;
 	  for(j=1;j<33;j++)
-     {  order_trans_rs485(mybox.start,ID,j,2,ID,1,mybox.end);
+     {  order_trans_rs485(mybox.start,id,j,2,id,1,mybox.end);
 	   delay_us(10000);
 	  }
 	 //  LED1=!LED1;
