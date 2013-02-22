@@ -18,6 +18,8 @@ u8 token[33];//主机号令牌
 
 box mybox;
 
+u8 rs485buf[LEN],lon=LEN;
+
  void TIM3_Int_Init(u16 arr,u16 psc)
 {
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
@@ -138,7 +140,7 @@ if(token[i]==1)
 		token[id]=1;
 		cont=0;
 	  for(j=1;j<33;j++)
-     {  order_trans_rs485(mybox.start,id,j,2,id,1,mybox.end);
+     {  order_trans_rs485(id,j,2,id,1);
 	   delay_us(10000);
 	  }
 	 //  LED1=!LED1;
@@ -175,6 +177,23 @@ token[i]=j;
    else return 0;
 }
 
+ void order_trans_rs485(u8 source,u8 destination, u8 send,u8 relay,u8 message)//主机程序，主机命令解析成RS485信息，发送给目的从机
+{  	 OS_CPU_SR cpu_sr=0;
+    OS_ENTER_CRITICAL();
+    rs485buf[0]='&';
+	rs485buf[1]=source;
+	rs485buf[2]=destination;
+	rs485buf[3]=send;
+	rs485buf[4]=relay;
+	rs485buf[5]=message;
+	rs485buf[6]='*';
+	RS485_Send_Data(rs485buf,7);//发送5个字节
+	OS_EXIT_CRITICAL();	
+}
+
+
+
+
 void Heartbeat_task(void *pdata)//master任务发送任务
 {		// u8 key;
         u8 i=0;
@@ -187,7 +206,7 @@ void Heartbeat_task(void *pdata)//master任务发送任务
 		//if(key==KEY_RIGHT)//KEY0按下,发送一次数据
 		for(i=1;i<33;i++)
 		{	
-	       order_trans_rs485(mybox.start,mybox.myid,i,0,0,0,mybox.end);//发送5个字节
+	       order_trans_rs485(mybox.myid,i,0,0,0);
 		    delay_us(10000);
 		  // LCD_ShowxNum(60+i*32,190,0,7,16,0X80);
 		}		 

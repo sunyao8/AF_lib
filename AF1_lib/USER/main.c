@@ -85,10 +85,7 @@ void key_task(void *pdata);
 
 
 extern box mybox;
-extern u8 RS485_RX_BUF[64]; 		//接收缓冲,最大64个字节
-//接收到的数据长度
-extern u8 RS485_RX_CNT;  
-//模式控制
+  
 extern  u16  dog_clock;
 
 extern OS_EVENT * RS485_MBOX;			//	rs485邮箱信号量
@@ -97,14 +94,14 @@ extern OS_EVENT *Heartbeat;			 //心跳信号量
 
 extern u8 cont;//用于更改主机号的记次数器
 extern  u8 token[33];//主机号令牌
-u8 rs485buf[LEN],lon=LEN;
+
 
 //接收缓存区 	
 
 //////////////////////////////////////////
 
 
-int rs485_trans_order(u8 *);
+
 int subcontrol(u8,u8);
 
 #define ID  3
@@ -208,29 +205,6 @@ void Receive_task(void *pdate)//接收任务
 
 
  /***********************************/
-
-
-
-
-
- void order_trans_rs485(u8 start,u8 source,u8 destination, u8 send,u8 relay,u8 message,u8 end)//主机程序，主机命令解析成RS485信息，发送给目的从机
-{  	 OS_CPU_SR cpu_sr=0;
-    OS_ENTER_CRITICAL();
-    rs485buf[0]=start;
-	rs485buf[1]=source;
-	rs485buf[2]=destination;
-	rs485buf[3]=send;
-	rs485buf[4]=relay;
-	rs485buf[5]=message;
-	rs485buf[6]=end;
-	RS485_Send_Data(rs485buf,7);//发送5个字节
-	OS_EXIT_CRITICAL();	
-}
-
-
-
-
-
 
 int subcontrol(u8 i,u8 j)//给下下位机放指令	 
 {
