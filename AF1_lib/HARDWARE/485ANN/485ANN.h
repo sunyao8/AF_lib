@@ -30,7 +30,8 @@
 
 #define MASTER_TASK_PRIO       			3 
 
-#define RS485_TX_EN		PGout(9)	//485模式控制.0,接收;1,发送.
+//#define RS485_TX_EN		PGout(9)	//485模式控制.0,接收;1,发送.开发板用
+#define RS485_TX_EN		PBout(15)	//485模式控制.0,接收;1,发送.本工程用
 //如果想串口中断接收，请不要注释以下宏定义
 #define EN_USART2_RX 	1			//0,不接收;1,接收.
 

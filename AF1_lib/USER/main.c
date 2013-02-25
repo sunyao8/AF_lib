@@ -104,7 +104,7 @@ extern  u8 token[33];//Ö÷»úºÅÁîÅÆ
 
 int subcontrol(u8,u8);
 
-#define ID  3
+#define ID  2
 /////////////////////////////////////////////
 int main(void)
  {	 

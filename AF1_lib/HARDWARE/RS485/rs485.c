@@ -30,14 +30,16 @@ void RS485_Init(u32 bound)
   	USART_InitTypeDef USART_InitStructure;
  	NVIC_InitTypeDef NVIC_InitStructure;
  
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOG, ENABLE);//使能GPIOA,G时钟
+//	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOG, ENABLE);//使能GPIOA,G时钟	 开发板配置 
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB, ENABLE);	 //本工程配置
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2,ENABLE);//使能USART2时钟
 	
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;				 //PG9端口配置
+//	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;				 //PG9端口配置,开发板配置
+	 GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;				 //本工程配置
  	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 		 //推挽输出
  	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
- 	GPIO_Init(GPIOG, &GPIO_InitStructure);
- 
+ //	GPIO_Init(GPIOG, &GPIO_InitStructure);		  //开发板配置
+ 		GPIO_Init(GPIOB, &GPIO_InitStructure);	   //本工程使用
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;	//PA2
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;	//复用推挽
     GPIO_Init(GPIOA, &GPIO_InitStructure);
