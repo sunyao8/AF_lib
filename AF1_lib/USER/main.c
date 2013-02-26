@@ -104,7 +104,7 @@ extern  u8 token[33];//主机号令牌
 
 int subcontrol(u8,u8);
 
-#define ID  2
+#define ID  6
 /////////////////////////////////////////////
 int main(void)
  {	 
@@ -184,13 +184,29 @@ void Receive_task(void *pdate)//接收任务
  /**************主机任务**********************/
   void master_task(void *pdata)
   {	  OS_CPU_SR cpu_sr=0;
+      u8 go=1,i;
    while(1){
   	if(mybox.master==1)
-	{
-	 OSSemPost(Heartbeat);
+	{	if(go==0)
+	  { OSSemPost(Heartbeat);
 			delay_ms(100);
-			LED0=!LED0;
-                                              //启动接收程序
+			
+      }
+		if(go==1)
+		{
+		   	for(i=1;i<33;i++)
+		{	   LED0=!LED0;
+	       order_trans_rs485(mybox.myid,i,1,1,1);
+		   delay_us(20000);
+		   order_trans_rs485(mybox.myid,i,1,1,0);
+		   delay_us(20000);
+		  order_trans_rs485(mybox.myid,i,1,2,1);
+		  delay_us(20000);
+		   order_trans_rs485(mybox.myid,i,1,2,0);
+		    delay_us(50000);
+		}	
+		}
+		                                      //启动接收程序
 	}
 	if(mybox.master==0)
 	{
@@ -215,10 +231,10 @@ int subcontrol(u8 i,u8 j)//给下下位机放指令
     }
    if(mybox.send==1) //下位机控制
    	{ 
-   	if(i==1&&j==1);
-    if(i==1&&j==0);
-    if(i==2&&j==1);
-    if(i==2&&j==0);
+   	if(i==1&&j==1)GPIO_ResetBits(GPIOA,GPIO_Pin_0);
+    if(i==1&&j==0)GPIO_SetBits(GPIOA,GPIO_Pin_0);
+    if(i==2&&j==1)GPIO_ResetBits(GPIOA,GPIO_Pin_8);
+    if(i==2&&j==0)GPIO_SetBits(GPIOA,GPIO_Pin_8);
 	return 1;
    	}
 if(mybox.send==2)//修改主机记录数组

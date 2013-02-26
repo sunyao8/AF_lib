@@ -318,7 +318,7 @@ ARM Macro Assembler    Page 5
               00000000 
 Command Line: --debug --xref --cpu=Cortex-M3 --apcs=interwork --depend=..\OBJ\o
 s_cpu_a.d -o..\OBJ\os_cpu_a.o -IC:\Keil\ARM\INC -IC:\Keil\ARM\INC\ST\STM32F10x 
---predefine="__EVAL SETA 1" --list=.\os_cpu_a.lst ..\UCOSII\PORT\os_cpu_a.asm
+--list=.\os_cpu_a.lst ..\UCOSII\PORT\os_cpu_a.asm
 
 
 
@@ -525,4 +525,4 @@ Symbol: OSTaskSwHook
       At line 175 in file ..\UCOSII\PORT\os_cpu_a.asm
 Comment: OSTaskSwHook used once
 8 symbols
-348 symbols in table
+347 symbols in table

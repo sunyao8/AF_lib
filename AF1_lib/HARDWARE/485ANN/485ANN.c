@@ -62,7 +62,7 @@ u8 rs485buf[LEN],lon=LEN;
 			turn_master_id(mybox.myid);
 			  cont++;
 			}
-			if(dog_clock>0)dog_clock--;
+			if(dog_clock>0){dog_clock--;cont=1;}
 		 }
 		}
    	OSIntExit();  
@@ -128,6 +128,7 @@ void initmybox(u8 id)//初始化自身信息
  mybox.end='*';	
 						
 }
+/*
 void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 {
 u8 i,j,flag=0;
@@ -149,6 +150,27 @@ if(token[i]==1)
       	}
    }
 }
+*/
+void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
+{
+   u8 i,flag=0;
+	{ 
+	  flag=cont;
+      if(id==(flag)){
+	  	for(i=1;i<33;i++)
+			{ order_trans_rs485(mybox.myid,i,0,0,0);
+		     delay_us(10000);
+			}
+         mybox.master=1;
+	    OSTaskResume(MASTER_TASK_PRIO);
+		cont=1;
+	  }
+	 //  LED1=!LED1;
+	  
+      }
+   }
+
+
 
 void modfiy_token_array(u8 i,u8 j)//原主机位为0，新主机位为1
 {
