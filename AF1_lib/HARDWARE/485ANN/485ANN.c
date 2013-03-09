@@ -9,7 +9,7 @@ u8 RS485_RX_CNT=0;
 //模式控制
  u16  dog_clock=10;
 
- OS_EVENT * RS485_MBOX;			//	rs485邮箱信号量
+ OS_EVENT * RS485_MBOX,* RS485_STUTAS_MBOX;			//	rs485邮箱信号量
  OS_EVENT *Heartbeat;			 //心跳信号量
 
 u8 cont=0;//用于更改主机号的记次数器
@@ -17,6 +17,9 @@ u8 cont=0;//用于更改主机号的记次数器
 u8 token[33];//主机号令牌
 
 box mybox;
+status_box mystatus;
+
+status_box system_status_list[33];
 
 u8 rs485buf[LEN],lon=LEN;
 
@@ -84,7 +87,10 @@ u8 rs485buf[LEN],lon=LEN;
 		if(RS485_RX_BUF[RS485_RX_CNT-1]=='*')
 		{
 				RS485_RX_CNT=0;
-				OSMboxPost(RS485_MBOX,(void*)&RS485_RX_BUF);
+
+				
+				if(RS485_RX_BUF[1]=='#'){OSMboxPost(RS485_STUTAS_MBOX,(void*)&RS485_RX_BUF);LED1=!LED1;}
+				  else OSMboxPost(RS485_MBOX,(void*)&RS485_RX_BUF);
 		} 
 	}  	
 	#ifdef OS_TICKS_PER_SEC	 	//如果时钟节拍数定义了,说明要使用ucosII了.
@@ -114,8 +120,6 @@ void initmybox(u8 id)//初始化自身信息
   u8 i;
   
   for(i=1;i<33;i++)token[i]=0;//初始化令牌
- // if(ID==1){mybox.master=1;token[1]=1;}
-  // if(ID!=1)mybox.master=0;
   mybox.master=0;
    token[1]=1;
  mybox.start='&';
@@ -160,7 +164,7 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 	  	for(i=1;i<33;i++)
 			{ order_trans_rs485(mybox.myid,i,0,0,0);
 		     delay_us(10000);
-			}
+			}//及时告知其他slave机器，已有主机
          mybox.master=1;
 	    OSTaskResume(MASTER_TASK_PRIO);
 		cont=1;
@@ -172,17 +176,7 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 
 
 
-void modfiy_token_array(u8 i,u8 j)//原主机位为0，新主机位为1
-{
-u8 k;
-for(k=1;k<33;k++)
-if(token[k]==1)
-{token[k]=0;
-break;
-} 
-token[i]=j;
 
-}
 
 
  int rs485_trans_order(u8 *tx_r485)//解析由主机发送过来的信号，并发送给下位机
@@ -224,8 +218,6 @@ void Heartbeat_task(void *pdata)//master任务发送任务
 	while(1)
 	{
 	OSSemPend(Heartbeat,0,&err);
-		//key=KEY_Scan(0);
-		//if(key==KEY_RIGHT)//KEY0按下,发送一次数据
 		for(i=1;i<33;i++)
 		{	
 	       order_trans_rs485(mybox.myid,i,0,0,0);
@@ -236,14 +228,64 @@ void Heartbeat_task(void *pdata)//master任务发送任务
 	}
 }
 
+/*****************************回馈信息函数********************************************/
+
+
+void init_mystatus(u8 myid,u8 size,u8 work_status,u8 work_time)
+{
+mystatus.myid=myid;
+mystatus.size=size;
+mystatus.work_status=work_status;
+mystatus.work_time=work_time;
+
+}
 
 
 
+void set_now_mystatus(u8 myid,u8 size,u8 work_status,u8 work_time)
+{
+mystatus.myid=myid;
+mystatus.size=size;
+mystatus.work_status=work_status;
+mystatus.work_time=work_time;
+
+}
 
 
 
+ void status_trans_rs485(status_box *mystatus)//从机程序
+{  	 OS_CPU_SR cpu_sr=0;
+    OS_ENTER_CRITICAL();
+    rs485buf[0]='&';
+	rs485buf[1]='#';
+	rs485buf[2]=mystatus->myid;
+	rs485buf[3]=mystatus->size;
+	rs485buf[4]=mystatus->work_status;
+	rs485buf[5]=mystatus->work_time;
+	rs485buf[6]='*';
+	RS485_Send_Data(rs485buf,7);//发送5个字节
+	OS_EXIT_CRITICAL();	
+}
 
 
+ void rs485_trans_status(u8 *tx_r485)//主机程序，主机命令解析成RS485信息，发送给目的从机
+ 	{
+       system_status_list[tx_r485[1]].myid=tx_r485[2];
+   	   system_status_list[tx_r485[1]].size=tx_r485[3];
+   	   system_status_list[tx_r485[1]].work_status=tx_r485[4];
+       system_status_list[tx_r485[1]].work_time=tx_r485[5];
+		  LED0=!LED0;
+   }
+
+
+void set_statuslist(u8 id,u8 size,u8 work_status,u8 work_time)
+{
+       system_status_list[id].myid=id;
+   	   system_status_list[id].size=size;
+   	   system_status_list[id].work_status=work_status;
+       system_status_list[id].work_time=work_time;
+
+}
 
 
 

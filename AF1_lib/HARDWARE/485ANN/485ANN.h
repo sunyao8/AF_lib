@@ -30,22 +30,37 @@
 
 #define MASTER_TASK_PRIO       			3 
 
-//#define RS485_TX_EN		PGout(9)	//485模式控制.0,接收;1,发送.开发板用
-#define RS485_TX_EN		PBout(15)	//485模式控制.0,接收;1,发送.本工程用
+#define RS485_TX_EN		PGout(9)	//485模式控制.0,接收;1,发送.开发板用
+//#define RS485_TX_EN		PBout(15)	//485模式控制.0,接收;1,发送.本工程用
 //如果想串口中断接收，请不要注释以下宏定义
 #define EN_USART2_RX 	1			//0,不接收;1,接收.
+
+
+
+ typedef struct  
+{ 
+  u8 myid;      //本电容箱ID号
+  u8 size;      //容量单位千法
+  u8 work_status;    //工作状态 1 为投入工作；0 为没有工作
+  u8 work_time;     //工作时间   
+}status_box;
+#define status_LEN 4
 
 
  //////////////////////////////////////////////////////////////////// 
 
 
 
-void modfiy_token_array(u8,u8);
 void turn_master_id(u8);
 void initmybox(u8);
 void TIM3_Int_Init(u16,u16);
 void order_trans_rs485(u8,u8,u8,u8,u8);
 int rs485_trans_order(u8 *);
+void rs485_trans_status(u8 *);
+void status_trans_rs485(status_box *);
+void set_now_mystatus(u8 ,u8 ,u8 ,u8 );
+void init_mystatus(u8 ,u8 ,u8 ,u8 );
+void set_statuslist(u8,u8,u8,u8);
 #endif	   
 
 
