@@ -61,6 +61,8 @@ void status_trans_rs485(status_box *);
 void set_now_mystatus(u8 ,u8 ,u8 ,u8 );
 void init_mystatus(u8 ,u8 ,u8 ,u8 );
 void set_statuslist(u8,u8,u8,u8);
+void delay_time(u32);//本系统的延时函数，time*450ms
+void inquiry_slave_status(u8);//查询从机状态并保存到从机状态表中，参数id是要查询的从机号   
 #endif	   
 
 

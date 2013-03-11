@@ -287,9 +287,25 @@ void set_statuslist(u8 id,u8 size,u8 work_status,u8 work_time)
 
 }
 
+void delay_time(u32 time)
+{ u32 i;
+  for(i=0;i<time;i++) 
+  { OSSemPost(Heartbeat);
+    delay_ms(100);
+    time++;
+  }
+}  //本系统的延时函数，time*450ms
 
-
-
+void inquiry_slave_status(u8 id)   
+  {  u8 *msg,err;
+   order_trans_rs485(mybox.myid,id,2,0,0);
+   delay_us(10000);
+   msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
+   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist(id,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time) 
+	else 
+	  rs485_trans_status(msg);
+	set_statuslist(mystatus.myid,mystatus.size,mystatus.work_status,mystatus.work_time);
+   } //查询从机状态并保存到从机状态表中，参数id是要查询的从机号
 
 
 
