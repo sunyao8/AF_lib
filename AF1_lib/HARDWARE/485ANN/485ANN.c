@@ -270,10 +270,10 @@ mystatus.work_time=work_time;
 
  void rs485_trans_status(u8 *tx_r485)//主机程序，主机命令解析成RS485信息，发送给目的从机
  	{
-       system_status_list[tx_r485[1]].myid=tx_r485[2];
-   	   system_status_list[tx_r485[1]].size=tx_r485[3];
-   	   system_status_list[tx_r485[1]].work_status=tx_r485[4];
-       system_status_list[tx_r485[1]].work_time=tx_r485[5];
+       system_status_list[tx_r485[2]].myid=tx_r485[2];
+   	   system_status_list[tx_r485[2]].size=tx_r485[3];
+   	   system_status_list[tx_r485[2]].work_status=tx_r485[4];
+       system_status_list[tx_r485[2]].work_time=tx_r485[5];
 		  LED0=!LED0;
    }
 

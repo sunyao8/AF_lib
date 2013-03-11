@@ -106,7 +106,11 @@ extern status_box system_status_list[33];
 
 int subcontrol(u8,u8);
 
-#define ID  1
+#define ID  2
+
+#define SIZE 20
+#define WORK_STATUS	 1		//0为没有工作  1为工作  2为坏掉，初始化为0
+#define WORK_TIME	10
 /////////////////////////////////////////////
 int main(void)
  {	 
@@ -116,11 +120,12 @@ int main(void)
 	delay_init();	    	 //延时函数初始化	  
 	NVIC_Configuration(); 	 //设置NVIC中断分组2:2位抢占优先级，2位响应优先级
  	LED_Init();			     //LED端口初始化
-	//	LCD_Init();	                                                              //调试显示
+		uart_init(9600);LCD_Init();	                                                              //调试显示
 	RS485_Init(9600);	//初始化RS485
 	TIM3_Int_Init(4999,7199);//10Khz的计数频率，计数5K次为500ms  
 	 initmybox(ID);
-	 set_now_mystatus(ID,20,1,10);
+	 init_mystatus(ID,SIZE,WORK_STATUS,WORK_TIME);
+	 
 	OSInit();  	 			//初始化UCOSII
 			  
  	OSTaskCreate(start_task,(void *)0,(OS_STK *)&START_TASK_STK[START_STK_SIZE-1],START_TASK_PRIO );//创建起始任务
@@ -174,6 +179,7 @@ void Receive_task(void *pdate)//接收任务
       u8 go=2,i;
 	   u8 *msg,err;
 	  u8 try_cont=0;
+	  for(i=1;i<33;i++)set_statuslist(i,0,0,0);
    while(1)
    	{
   	if(mybox.master==1)
@@ -207,24 +213,29 @@ void Receive_task(void *pdate)//接收任务
 		}	
 		if(go==2)
 			   {
-			   //for(i=1;i<33;i++)		 //把下面语句封装成函数
+			   for(i=1;i<33;i++)		 //把下面语句封装成函数
                { 
 			  // LED0=!LED0; 
-			   order_trans_rs485(mybox.myid,2,2,0,0);
+			   order_trans_rs485(mybox.myid,i,2,0,0);
 			    delay_us(10000);
-              msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/20,&err);
+              msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
 		//	 msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,10,&err);
 			//	  LED0=!LED0;
-			   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist(2,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time)
+			   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist(i,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time)
             //   if(err!=OS_ERR_NONE){LED0=!LED0; set_statuslist(i,0,2,0);} 
 				else 
 				rs485_trans_status(msg);
-						//下面是用LCD屏测试回馈信息功能
-			//	LCD_ShowxNum(60+1*32,190,system_status_list[2].myid,3,16,0X80);
-			//	LCD_ShowxNum(60+2*32,190,system_status_list[2].size,3,16,0X80);
-			//	LCD_ShowxNum(60+3*32,190,system_status_list[2].work_status,3,16,0X80);
-			//	LCD_ShowxNum(60+4*32,190,system_status_list[2].work_time,3,16,0X80);
+				 set_statuslist(mystatus.myid,mystatus.size,mystatus.work_status,mystatus.work_time);
+					
+					//下面是用LCD屏测试回馈信息功能
 			   	}
+				 for(i=1;i<33;i++)
+				   {
+				   LCD_ShowxNum(60+1*32,i*15,system_status_list[i].myid,3,16,0X80);
+				   LCD_ShowxNum(60+2*32,i*15,system_status_list[i].size,3,16,0X80);
+				   LCD_ShowxNum(60+3*32,i*15,system_status_list[i].work_status,3,16,0X80);	
+			       LCD_ShowxNum(60+4*32,i*15,system_status_list[i].work_time,3,16,0X80);
+				   }
 		       }
 			 	if(go==3){ LED0=!LED0;order_trans_rs485(mybox.myid,2,2,0,0);delay_us(10000);}  
 		
