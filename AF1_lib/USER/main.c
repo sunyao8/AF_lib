@@ -106,7 +106,7 @@ extern status_box system_status_list[33];
 
 int subcontrol(u8,u8);
 
-#define ID  2
+#define ID  3
 
 #define SIZE 20
 #define WORK_STATUS	 1		//0为没有工作  1为工作  2为坏掉，初始化为0
@@ -122,7 +122,7 @@ int main(void)
  	LED_Init();			     //LED端口初始化
 		uart_init(9600);LCD_Init();	                                                              //调试显示
 	RS485_Init(9600);	//初始化RS485
-	TIM3_Int_Init(4999,7199);//10Khz的计数频率，计数5K次为500ms  
+	TIM4_Int_Init(4999,7199);//10Khz的计数频率，计数5K次为500ms  
 	 initmybox(ID);
 	 init_mystatus(ID,SIZE,WORK_STATUS,WORK_TIME);
 	 
@@ -149,8 +149,8 @@ void start_task(void *pdata)
 }
 //LED任务
 
-
-void Receive_task(void *pdate)//接收任务
+ /**************从机任务**********************/
+void Receive_task(void *pdate)//从机任务
 {   u8 err;
 	 u8 *msg;
 	 int flag1,flag2;
@@ -174,7 +174,7 @@ void Receive_task(void *pdate)//接收任务
 	}
 	}
  /**************主机任务**********************/
-  void master_task(void *pdata)
+  void master_task(void *pdata)	  //主机任务
   {	  OS_CPU_SR cpu_sr=0;
       u8 go=2,i;
 	   u8 *msg,err;
@@ -219,10 +219,7 @@ void Receive_task(void *pdate)//接收任务
 			   order_trans_rs485(mybox.myid,i,2,0,0);
 			    delay_us(10000);
               msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
-		//	 msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,10,&err);
-			//	  LED0=!LED0;
 			   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist(i,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time)
-            //   if(err!=OS_ERR_NONE){LED0=!LED0; set_statuslist(i,0,2,0);} 
 				else 
 				rs485_trans_status(msg);
 				 set_statuslist(mystatus.myid,mystatus.size,mystatus.work_status,mystatus.work_time);

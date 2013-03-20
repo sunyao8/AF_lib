@@ -53,7 +53,7 @@
 
 void turn_master_id(u8);
 void initmybox(u8);
-void TIM3_Int_Init(u16,u16);
+void TIM4_Int_Init(u16,u16);
 void order_trans_rs485(u8,u8,u8,u8,u8);
 int rs485_trans_order(u8 *);
 void rs485_trans_status(u8 *);

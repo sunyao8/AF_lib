@@ -12,18 +12,18 @@
 
 Target (Target 1), 0x0004 // Tools: 'ARM-ADS'
 GRPOPT 1,(USER),1,0,0
-GRPOPT 2,(HARDWARE),1,0,0
+GRPOPT 2,(HARDWARE),0,0,0
 GRPOPT 3,(SYSTEM),0,0,0
 GRPOPT 4,(CORE),0,0,0
-GRPOPT 5,(FWLib),0,0,0
+GRPOPT 5,(FWLib),1,0,0
 GRPOPT 6,(UCOSII-CORE),0,0,0
 GRPOPT 7,(UCOSII-PORT),0,0,0
 GRPOPT 8,(UCOSII-CONFIG),0,0,0
 GRPOPT 9,(INC),1,0,0
 
-OPTFFF 1,1,1,1207959552,0,91,91,0,<.\main.c><main.c> 
+OPTFFF 1,1,1,671088640,0,34,34,0,<.\main.c><main.c> 
 OPTFFF 1,2,1,0,0,0,0,0,<.\stm32f10x_it.c><stm32f10x_it.c> 
-OPTFFF 1,3,1,0,0,0,0,0,<.\system_stm32f10x.c><system_stm32f10x.c> 
+OPTFFF 1,3,1,1,0,0,0,0,<.\system_stm32f10x.c><system_stm32f10x.c> 
 OPTFFF 2,4,1,536870912,0,0,0,0,<..\HARDWARE\LED\led.c><led.c> 
 OPTFFF 2,5,1,0,0,0,0,0,<..\HARDWARE\IIC\myiic.c><myiic.c> 
 OPTFFF 2,6,1,0,0,0,0,0,<..\HARDWARE\24CXX\24cxx.c><24cxx.c> 
@@ -54,7 +54,7 @@ OPTFFF 5,30,1,0,0,0,0,0,<..\STM32F10x_FWLib\src\stm32f10x_rtc.c><stm32f10x_rtc.c
 OPTFFF 5,31,1,0,0,0,0,0,<..\STM32F10x_FWLib\src\stm32f10x_sdio.c><stm32f10x_sdio.c> 
 OPTFFF 5,32,1,0,0,0,0,0,<..\STM32F10x_FWLib\src\stm32f10x_tim.c><stm32f10x_tim.c> 
 OPTFFF 5,33,1,0,0,0,0,0,<..\STM32F10x_FWLib\src\stm32f10x_wwdg.c><stm32f10x_wwdg.c> 
-OPTFFF 5,34,1,587202561,0,0,0,0,<..\HARDWARE\485ANN\485ANN.c><485ANN.c> 
+OPTFFF 5,34,1,1,0,1,22,0,<..\HARDWARE\485ANN\485ANN.c><485ANN.c> 
 OPTFFF 6,35,1,0,0,0,0,0,<..\UCOSII\CORE\os_core.c><os_core.c> 
 OPTFFF 6,36,1,0,0,0,0,0,<..\UCOSII\CORE\os_flag.c><os_flag.c> 
 OPTFFF 6,37,1,486539264,0,0,0,0,<..\UCOSII\CORE\os_mbox.c><os_mbox.c> 
@@ -71,8 +71,9 @@ OPTFFF 7,47,1,0,0,0,0,0,<..\UCOSII\PORT\os_cpu_c.c><os_cpu_c.c>
 OPTFFF 7,48,1,0,0,0,0,0,<..\UCOSII\PORT\os_dbg.c><os_dbg.c> 
 OPTFFF 8,49,5,0,0,0,0,0,<..\UCOSII\CONFIG\includes.h><includes.h> 
 OPTFFF 8,50,5,0,0,0,0,0,<..\UCOSII\CONFIG\os_cfg.h><os_cfg.h> 
-OPTFFF 9,51,5,0,0,0,0,0,<..\HARDWARE\485ANN\485ANN.h><485ANN.h> 
+OPTFFF 9,51,5,0,0,48,48,0,<..\HARDWARE\485ANN\485ANN.h><485ANN.h> 
 
+ExtF <C:\Users\Administrator\Documents\GitHub\AF_lib\AF1_lib\USER\stm32f10x.h> 14,41,0,{ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 TARGOPT 1, (Target 1)
  ADSCLK=8000000
@@ -92,7 +93,7 @@ TARGOPT 1, (Target 1)
   OPTKEY 0,(DLGUARM)((106=-1,-1,-1,-1,0)(107=-1,-1,-1,-1,0))
   OPTKEY 0,(JL2CM3)(-U20090928 -O14 -S0 -A0 -C0 -JU1 -JI127.0.0.1 -JP0 -N00("Unknown JTAG device") -D00(00000000) -L00(0) -TO18 -TC10000000 -TP21 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -TB1 -TFE0 -FO7 -FD20000000 -FC800 -FN1 -FF0STM32F10x_128 -FS08000000 -FL08000)
   OPTBB 0,0,237,1,134218880,0,0,0,0,1,<main.c>()()
-  OPTDF 0x40000084
+  OPTDF 0x84
   OPTLE <>
   OPTLC <>
 EndOpt
