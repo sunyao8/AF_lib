@@ -1,57 +1,177 @@
+//#include <stm32f10x_lib.h>
 #include "key.h"
-#include "sys.h" 
 #include "delay.h"
+#include "ht1621.h"
+#include "led.h"
+//#include "exti.h"
+#include "24cxx.h" 	
+static u8 m=1;
+static u8 grafnum=1;
+u8 zhongduan_flag=1;
+u8 id_num;
+u8 grafnum,tempshuzhi,vernum=101,hguestnum=222,gonglvshishu;
+u16 dianya_zhi,	wugongkvar;
+u32	dianliuzhi;
+u16 k=100;//电流系数
 //////////////////////////////////////////////////////////////////////////////////	 
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//ALIENTEK战舰STM32开发板
-//按键驱动代码	   
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//修改日期:2012/9/3
+//本程序为控制器设计，未经许可，不得复制外传
+//实验板栋达电子V3.0-1
+//KEY 代码 PA11为显示板设置按键；PA12为手动投切开关	   
+//修改日期:2013/3/13
 //版本：V1.0
 //版权所有，盗版必究。
-//Copyright(C) 广州市星翼电子科技有限公司 2009-2019
+//Copyright(C) 济宁市栋达电子科技有限公司 2013-2023
 //All rights reserved									  
 //////////////////////////////////////////////////////////////////////////////////  
 								    
 //按键初始化函数
-void KEY_Init(void) //IO初始化
-{ 
- 	GPIO_InitTypeDef GPIO_InitStructure;
-	//初始化KEY0-->GPIOA.13,KEY1-->GPIOA.15  上拉输入
- 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOE,ENABLE);//使能PORTA,PORTE时钟
+void KEY_Init(void)
+{
+	RCC->APB2ENR|=1<<2;     //使能PORTA时钟
+	GPIOA->CRH&=0XFFF00FFF;	//PA11 PA12设置成输入	  
+	GPIOA->CRH|=0X00088000; 
+	GPIOA->ODR|=1<11;		// 上拉
+	GPIOA->ODR|=1<12;		  //上拉
+} 
 
-	GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4;//PE2~4
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; //设置成上拉输入
- 	GPIO_Init(GPIOE, &GPIO_InitStructure);//初始化GPIOE2,3,4
-
-	//初始化 WK_UP-->GPIOA.0	  下拉输入
-	GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; //PA0设置成输入，默认下拉	  
-	GPIO_Init(GPIOA, &GPIO_InitStructure);//初始化GPIOA.0
-
-}
-//按键处理函数
-//返回按键值
-//mode:0,不支持连续按;1,支持连续按;
-//0，没有任何按键按下
-//1，KEY0按下
-//2，KEY1按下
-//3，KEY2按下 
-//4，KEY3按下 WK_UP
-//注意此函数有响应优先级,KEY0>KEY1>KEY2>KEY3!!
-u8 KEY_Scan(u8 mode)
-{	 
-	static u8 key_up=1;//按键按松开标志
-	if(mode)key_up=1;  //支持连按		  
-	if(key_up&&(KEY0==0||KEY1==0||KEY2==0||KEY3==1))
+void key_idset(void)
+{
+	
+	u8 h;
+	if((KEY0==0)&&m)
 	{
-		delay_ms(10);//去抖动 
-		key_up=0;
-		if(KEY0==0)return 1;
-		else if(KEY1==0)return 2;
-		else if(KEY2==0)return 3;
-		else if(KEY3==1)return 4;
-	}else if(KEY0==1&&KEY1==1&&KEY2==1&&KEY3==0)key_up=1; 	    
- 	return 0;// 无按键按下
+	   delay_us(10000);
+	   m=0;
+	   if(KEY0==0)
+	   while(KEY0==0)
+	   	{
+	   	   delay_us(10000);
+		   h++;
+		   if(h>=250)break;
+	   
+	   	}
+			   if(h>=250)
+			   {		
+					zhongduan_flag=0;
+						
+			   		Clera_lcd();
+		
+			   		Graf_setid(id_num);
+			   }
+			   else
+				   {  
+				     if(zhongduan_flag==1)
+				      	{
+					  		grafnum++;
+					  		if(grafnum>6)grafnum=1;
+					  
+					    	  switch(grafnum)
+								{				 
+									case 1:	//显示功率因数和电压值
+										Clera_lcd();
+										Graf_con_u(gonglvshishu,dianya_zhi);
+										break;
+									case 2:	//显示电流
+										Clera_lcd();
+										Graf_cuirrent(dianliuzhi);
+										break;
+									case 3:	//显示无功功率	 
+										Clera_lcd();
+										Graf_qkvar(wugongkvar);
+										break;
+									case 4:	//显示温度 
+										Clera_lcd();
+										Graf_temp(tempshuzhi);
+										break;
+					
+									case 5:	//显示ID 
+										Clera_lcd();
+										Graf_id(hguestnum,id_num);
+										break;
+					
+									case 6:	//显示VER 
+										Clera_lcd();
+										Graf_ver(vernum);
+										break;
+					
+								}
+					 	}
+						if(zhongduan_flag==0)
+				      	{
+					  		id_num++;
+					  		if(id_num>32)id_num=0;
+							Clera_lcd();
+	   						Graf_setid(id_num);
+							AT24CXX_WriteOneByte(0x0010,id_num);
+						}
+				   }
+	
+	}
+	else if(KEY0==1)
+		{
+		 	m=1;
+			delay_us(10000);
+			 while(KEY0==1)
+			 {
+		   	   delay_us(10000);
+			   h++;
+			   if(h>=250)break;
+	   
+	   		 }
+			   if(h>=250)
+				 {
+						  zhongduan_flag=1;
+					  	  switch(grafnum)
+							{				 
+								case 1:	//显示功率因数和电压值
+									Clera_lcd();
+									Graf_con_u(gonglvshishu,dianya_zhi);
+									break;
+								case 2:	//显示电流
+									Clera_lcd();
+									Graf_cuirrent(dianliuzhi);
+									break;
+								case 3:	//显示无功功率	 
+									Clera_lcd();
+									Graf_qkvar(wugongkvar);
+									break;
+								case 4:	//显示温度 
+									Clera_lcd();
+									Graf_temp(tempshuzhi);
+									break;
+				
+								case 5:	//显示ID 
+									Clera_lcd();
+									Graf_id(hguestnum,id_num);
+									break;
+				
+								case 6:	//显示VER 
+									Clera_lcd();
+									Graf_ver(vernum);
+									break;
+				
+							}	
+				 }
+
+		}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

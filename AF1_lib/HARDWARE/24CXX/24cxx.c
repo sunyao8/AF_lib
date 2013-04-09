@@ -1,11 +1,17 @@
 #include "24cxx.h" 
-//#include "delay.h" 
-#include "delay.h"
-//Mini STM32开发板
-//24CXX驱动函数(适合24C01~24C16,24C32~256未经过测试!有待验证!)
-//正点原子@ALIENTEK
-//2010/6/10
-//V1.2
+#include "delay.h" 
+										 
+//////////////////////////////////////////////////////////////////////////////////	 
+//本程序为控制器设计，未经许可，不得复制外传
+//实验板栋达电子V3.0-1
+//EERPROM AT24CXX 代码 PB12为WP;PB13为SCL;PB14为SDA	   
+//修改日期:2013/3/13
+//版本：V1.0
+//版权所有，盗版必究。
+//Copyright(C) 济宁市栋达电子科技有限公司 2013-2023
+//All rights reserved									  
+//////////////////////////////////////////////////////////////////////////////////
+
 
 //初始化IIC接口
 void AT24CXX_Init(void)
@@ -23,10 +29,8 @@ u8 AT24CXX_ReadOneByte(u16 ReadAddr)
 	{
 		IIC_Send_Byte(0XA0);	   //发送写命令
 		IIC_Wait_Ack();
-		IIC_Send_Byte(ReadAddr>>8);//发送高地址
-		IIC_Wait_Ack();		 
-	}else IIC_Send_Byte(0XA0+((ReadAddr/256)<<1));   //发送器件地址0XA0,写数据 	 
-
+		IIC_Send_Byte(ReadAddr>>8);//发送高地址	    
+	}else IIC_Send_Byte(0XA0+((ReadAddr/256)<<1));   //发送器件地址0XA0,写数据 	   
 	IIC_Wait_Ack(); 
     IIC_Send_Byte(ReadAddr%256);   //发送低地址
 	IIC_Wait_Ack();	    
@@ -47,11 +51,8 @@ void AT24CXX_WriteOneByte(u16 WriteAddr,u8 DataToWrite)
 	{
 		IIC_Send_Byte(0XA0);	    //发送写命令
 		IIC_Wait_Ack();
-		IIC_Send_Byte(WriteAddr>>8);//发送高地址
- 	}else
-	{
-		IIC_Send_Byte(0XA0+((WriteAddr/256)<<1));   //发送器件地址0XA0,写数据 
-	}	 
+		IIC_Send_Byte(WriteAddr>>8);//发送高地址	  
+	}else IIC_Send_Byte(0XA0+((WriteAddr/256)<<1));   //发送器件地址0XA0,写数据 	 
 	IIC_Wait_Ack();	   
     IIC_Send_Byte(WriteAddr%256);   //发送低地址
 	IIC_Wait_Ack(); 	 										  		   
@@ -134,10 +135,6 @@ void AT24CXX_Write(u16 WriteAddr,u8 *pBuffer,u16 NumToWrite)
 		pBuffer++;
 	}
 }
- 
-
-
-
 
 
 

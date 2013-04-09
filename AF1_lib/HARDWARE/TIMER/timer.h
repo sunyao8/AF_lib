@@ -28,9 +28,7 @@
 #define LED0_PWM_VAL TIM3->CCR2    
 //TIM4 CH1作为PWM DAC的输出通道 
 #define PWM_DAC_VAL  TIM4->CCR1 
-
-void TIM3_Int_Init(u16 arr,u16 psc);
-void TIM3_PWM_Init(u16 arr,u16 psc);
+void TIM3_Cap_Init(u16 arr,u16 psc);
 void TIM5_Cap_Init(u16 arr,u16 psc);
 void TIM4_PWM_Init(u16 arr,u16 psc);
 #endif

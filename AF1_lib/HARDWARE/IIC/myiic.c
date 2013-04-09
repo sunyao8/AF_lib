@@ -1,34 +1,26 @@
+
 #include "myiic.h"
 #include "delay.h"
 //////////////////////////////////////////////////////////////////////////////////	 
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//Mini STM32开发板
-//IIC 驱动函数	   
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//修改日期:2010/6/10 
+//本程序为控制器设计，未经许可，不得复制外传
+//实验板栋达电子V3.0-1
+//EERPROM AT24CXX代码 PB12为WP;PB13为SCL;PB14为SDA	   
+//修改日期:2013/3/13
 //版本：V1.0
 //版权所有，盗版必究。
-//Copyright(C) 正点原子 2009-2019
-//All rights reserved
-////////////////////////////////////////////////////////////////////////////////// 	  
-
+//Copyright(C) 济宁市栋达电子科技有限公司 2013-2023
+//All rights reserved									  
+//////////////////////////////////////////////////////////////////////////////////
+ 
 //初始化IIC
 void IIC_Init(void)
 {					     
-	GPIO_InitTypeDef GPIO_InitStructure;
-	//RCC->APB2ENR|=1<<4;//先使能外设IO PORTB时钟 
-	RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOB, ENABLE );	
-	   
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10|GPIO_Pin_11;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP ;   //推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_SetBits(GPIOB,GPIO_Pin_10|GPIO_Pin_11); 						 //PE.5 输出高 
- 
-	IIC_SCL=1;
-	IIC_SDA=1;
-
+ 	RCC->APB2ENR|=1<<3;//先使能外设IO PORTB时钟 							 
+	GPIOB->CRH&=0XF000FFFF;//PB12/1113/14 推挽输出
+	GPIOB->CRH|=0X03330000;	   
+	GPIOB->ODR&=~(1<<12);     //PB12输出低电平
+	GPIOB->ODR|=1<<13;		  //PB13,14 输出高
+	GPIOB->ODR|=1<<14;
 }
 //产生IIC起始信号
 void IIC_Start(void)

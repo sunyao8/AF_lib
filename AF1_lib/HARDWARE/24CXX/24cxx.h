@@ -1,18 +1,17 @@
 #ifndef __24CXX_H
 #define __24CXX_H
-#include "myiic.h"   
+#include "myiic.h"  
+ 
 //////////////////////////////////////////////////////////////////////////////////	 
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//Mini STM32开发板
-//24CXX驱动函数(适合24C01~24C16,24C32~256未经过测试!有待验证!)	   
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//修改日期:2010/6/10 
+//本程序为控制器设计，未经许可，不得复制外传
+//实验板栋达电子V3.0-1
+//EERPROM AT24CXX 代码 PB12为WP;PB13为SCL;PB14为SDA	   
+//修改日期:2013/3/13
 //版本：V1.0
 //版权所有，盗版必究。
-//Copyright(C) 正点原子 2009-2019
-//All rights reserved
-////////////////////////////////////////////////////////////////////////////////// 	  
+//Copyright(C) 济宁市栋达电子科技有限公司 2013-2023
+//All rights reserved									  
+//////////////////////////////////////////////////////////////////////////////////
 
 #define AT24C01		127
 #define AT24C02		255
@@ -24,7 +23,7 @@
 #define AT24C128	16383
 #define AT24C256	32767  
 //Mini STM32开发板使用的是24c02，所以定义EE_TYPE为AT24C02
-#define EE_TYPE AT24C02
+#define EE_TYPE AT24C128
 					  
 u8 AT24CXX_ReadOneByte(u16 ReadAddr);							//指定地址读取一个字节
 void AT24CXX_WriteOneByte(u16 WriteAddr,u8 DataToWrite);		//指定地址写入一个字节
