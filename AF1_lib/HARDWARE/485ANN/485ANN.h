@@ -112,7 +112,8 @@ s8 sort_idlenode_list(idle_list *,status_list_node *);
 void myled(void);
 void try(void);
 u16 comp_16(u16 ,u16 );
-
+void led_on_off(u8 ) ;
+extern int subcontrol(u8,u8);
 #endif	   
 
 

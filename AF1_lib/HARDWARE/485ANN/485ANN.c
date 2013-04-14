@@ -105,19 +105,21 @@ extern u32	dianliuzhi;
 			if(dog_clock>0){dog_clock--;cont=1;}
 		 }
 		 if (mystatus.work_status[0]==1)  //工作时间的计时
-		    {  life_time_1++;
-		       if(life_time_1==4)
+		    { // life_time_1++;
+		       //if(life_time_1==4)
 			   { mystatus.work_time[0]++;
-			     life_time_1=0;
-				 if(mystatus.work_time[0]==254)mystatus.work_time[0]=0;
+			    // life_time_1=0;
+				 if(mystatus.work_time[0]==37)mystatus.work_time[0]=39;
+				  if(mystatus.work_time[0]==254)mystatus.work_time[0]=0;
 			   }
 		 	}
 		 if(mystatus.work_status[1]==1)
-		 	{ life_time_2++;
-              if(life_time_2==4)
+		 	{ //life_time_2++;
+              //if(life_time_2==4)
 			  	{  mystatus.work_time[1]++;
-			       life_time_2=0;
-                   if(mystatus.work_time[1]==254)mystatus.work_time[1]=0;
+			      // life_time_2=0;
+                   if(mystatus.work_time[1]==37)mystatus.work_time[1]=39;
+			 if(mystatus.work_time[1]==254)mystatus.work_time[1]=0;	   
 			    }
 		     }
 		}
@@ -237,7 +239,7 @@ void TIM3_IRQHandler(void)
 				RS485_RX_CNT=0;
 
 				
-				if(RS485_RX_BUF[1]=='#'){OSMboxPost(RS485_STUTAS_MBOX,(void*)&RS485_RX_BUF);LED1=!LED1;}
+				if(RS485_RX_BUF[1]=='#'){OSMboxPost(RS485_STUTAS_MBOX,(void*)&RS485_RX_BUF);}
 				  else OSMboxPost(RS485_MBOX,(void*)&RS485_RX_BUF);
 		} 
 	}  	
@@ -311,13 +313,13 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
   wugongkvar=comp_16(tx_r485[10],tx_r485[11]);
   tempshuzhi=tx_r485[12];
   gonglvshishu=tx_r485[13];
-   if(mybox.myid==tx_r485[2])//判断是否是发给本机的信息
+   if(mybox.myid==tx_r485[2]||tx_r485[2]==0)//判断是否是发给本机的信息或是广播信息
    	{
    	 mybox.source=tx_r485[1];
    	 mybox.send=tx_r485[3];
      mybox.relay=tx_r485[4];
      mybox.message=tx_r485[5];
- return 1;
+     return 1;
    	}
    else return 0;
 }
@@ -341,6 +343,7 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 	rs485buf[13]=gonglvshishu;
 	rs485buf[14]='*';//协议尾
 	RS485_Send_Data(rs485buf,15);//发送5个字节
+	if(destination==source)subcontrol(relay, message);//如果信息发给的自己
 	OS_EXIT_CRITICAL();	
 }
 
@@ -369,6 +372,26 @@ void Heartbeat_task(void *pdata)//master任务发送任务
 				   
 	}
 }
+
+void led_on_off(u8 on_off) //参数值1 为打开led ，0为关闭led
+{
+u8 i;
+if(on_off==1)
+    {
+        for(i=1;i<33;i++)
+	   { order_trans_rs485(mybox.myid,0,4,0,0);
+             delay_us(10000);
+          }	 
+    }
+if(on_off==0)
+    {
+        for(i=1;i<33;i++)
+	   { order_trans_rs485(mybox.myid,0,3,0,0);
+             delay_us(10000);
+          }	 
+    }
+}
+
 
 /*****************************回馈信息函数********************************************/
 
@@ -429,7 +452,7 @@ mystatus.work_time[1]=work_time_2;
    	   system_status_list_2[tx_r485[2]].work_status=tx_r485[6];
        system_status_list_2[tx_r485[2]].work_time=tx_r485[8];
 	   
-		  LED0=!LED0;
+		 // LED0=!LED0;
    }
 
 
@@ -688,7 +711,7 @@ void inquiry_slave_status(u8 id)
    order_trans_rs485(mybox.myid,id,2,0,0);
    delay_us(10000);
    msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
-   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist_1(id,0,2,0);set_statuslist_2(id,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time) 
+   if(err==OS_ERR_TIMEOUT){set_statuslist_1(id,0,2,0);set_statuslist_2(id,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time) 
 	else 
 	  rs485_trans_status(msg);
 	if(id==mybox.myid)

@@ -8,10 +8,10 @@
 static u8 m=1;
 static u8 grafnum=1;
 u8 zhongduan_flag=1;
-u8 id_num;
-u8 grafnum,tempshuzhi,vernum=101,hguestnum=222,gonglvshishu;
-u16 dianya_zhi,	wugongkvar;
-u32	dianliuzhi;
+u8 id_num=0;
+u8 grafnum,tempshuzhi,vernum=101,hguestnum=222,gonglvshishu=0;
+u16 dianya_zhi=0,wugongkvar=0;
+u32	dianliuzhi=0;
 u16 k=100;//电流系数
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序为控制器设计，未经许可，不得复制外传

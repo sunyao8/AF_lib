@@ -12,7 +12,7 @@
 #include "ht1621.h"
 #include "key.h"
 //32
-//#include "lcd.h"//测试用
+#include "lcd.h"//测试用
 /////////////////////////UCOSII任务设置///////////////////////////////////
 //START 任务
 //设置任务优先级
@@ -102,18 +102,18 @@ extern u8 hguestnum;
 
 //////////////////////////////////////////
 
-
+u8 led_lock=0;
 
 int subcontrol(u8,u8);
 
-#define ID  3
+#define ID  8
 
 #define SIZE_1 20
 #define SIZE_2 20
-#define WORK_STATUS_1	 1//0为没有工作  1为工作  2为坏掉，初始化为0
-#define WORK_STATUS_2    1 
-#define WORK_TIME_1 5
-#define WORK_TIME_2	10
+#define WORK_STATUS_1	 0//0为没有工作  1为工作  2为坏掉，初始化为0
+#define WORK_STATUS_2    0 
+#define WORK_TIME_1 0
+#define WORK_TIME_2	0
 /////////////////////////////////////////////
 int main(void)
  {	 
@@ -122,7 +122,7 @@ int main(void)
 	
 	delay_init();	    	 //延时函数初始化	  
 	NVIC_Configuration(); 	 //设置NVIC中断分组2:2位抢占优先级，2位响应优先级
- //	LED_Init();			     //LED端口初始化
+ 	LED_Init();			     //LED端口初始化
 /*************************/
 	HT1621_Init();
 	delay_us(100000);
@@ -130,10 +130,11 @@ int main(void)
 	AT24CXX_Init();			//IIC初始化
 	Adc_Init();
 /************************************/
-	//	uart_init(9600);LCD_Init();	                                                              //调试显示
+
+		uart_init(9600);LCD_Init();	                                                              //调试显示
 	RS485_Init(9600);	//初始化RS485
 	TIM4_Int_Init(4999,7199);//10Khz的计数频率，计数5K次为500ms 
-	TIM3_Cap_Init(0XFFFF,72-1);	//以1Mhz的频率计数
+//	TIM3_Cap_Init(0XFFFF,72-1);	//以1Mhz的频率计数	  //开发板用LCD时，必须注掉此举，引脚冲突
 	 initmybox(ID);
 	 init_mystatus(ID,SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
 	 
@@ -182,16 +183,16 @@ void Receive_task(void *pdate)//从机任务
                if(flag2==1);/*****下位机，控制命令，喂狗*****/		  
 	 	}
 
-key_idset();
+      if(led_lock==0)key_idset();
 	}
 	}
  /**************主机任务**********************/
   void master_task(void *pdata)	  //主机任务
   {	  OS_CPU_SR cpu_sr=0;
-      u8 go=0,i;
+      u8 go=2,i;
 	  // u8 *msg,err;
 	  u8 try_cont=0;
-	  for(i=1;i<33;i++){set_statuslist_1(i,0,0,0);set_statuslist_2(i,0,0,0);}
+	  for(i=1;i<33;i++){set_statuslist_1(i,0,0,0);set_statuslist_2(i,0,0,0);}//初始化两个状态队列
    while(1)
    	{
   	if(mybox.master==1)
@@ -227,31 +228,28 @@ key_idset();
 		}	
 		if(go==2)
 			   {
-			   for(i=1;i<33;i++)		 //把下面语句封装成函数
-               { 
-			  // LED0=!LED0; 
-		/*	   order_trans_rs485(mybox.myid,i,2,0,0);
-			    delay_us(10000);
-              msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
-			   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist(i,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time)
-				else 
-				rs485_trans_status(msg);
-				 set_statuslist(mystatus.myid,mystatus.size,mystatus.work_status,mystatus.work_time);*/
-					
-					//下面是用LCD屏测试回馈信息功能
-				inquiry_slave_status(i);	
-			   	}
-			//	 for(i=1;i<33;i++)
-			//	   {
-			//	   LCD_ShowxNum(10+1*32,i*15,system_status_list_1[i].myid,3,16,0X80);
-			//	   LCD_ShowxNum(10+2*32,i*15,system_status_list_1[i].size,3,16,0X80);
-			//	   LCD_ShowxNum(10+3*32,i*15,system_status_list_1[i].work_status,3,16,0X80);	
-			  //     LCD_ShowxNum(10+4*32,i*15,system_status_list_1[i].work_time,3,16,0X80);
-			//	   LCD_ShowxNum(10+5*32,i*15,system_status_list_2[i].myid,3,16,0X80);
-			//	   LCD_ShowxNum(10+6*32,i*15,system_status_list_2[i].size,3,16,0X80);
-				//   LCD_ShowxNum(10+7*32,i*15,system_status_list_2[i].work_status,3,16,0X80);	
-			  //     LCD_ShowxNum(10+8*32,i*15,system_status_list_2[i].work_time,3,16,0X80);
-			//	   }
+                        for(i=1;i<33;i++) //关闭从机led功能，防止通信控制信息的丢失
+                        	{led_on_off(0);}
+			   for(i=1;i<33;i++)		 //收集从机状态
+               { inquiry_slave_status(i);	
+	         }
+			   //下面是用LCD屏测试回馈信息功能
+				 for(i=1;i<33;i++)
+				   {
+				   LCD_ShowxNum(5+1*25,i*15,system_status_list_1[i].myid,3,16,0X80);
+				   LCD_ShowxNum(5+2*25,i*15,system_status_list_1[i].size,3,16,0X80);
+				   LCD_ShowxNum(5+3*25,i*15,system_status_list_1[i].work_status,3,16,0X80);	
+			       LCD_ShowxNum(5+4*25,i*15,system_status_list_1[i].work_time,3,16,0X80);
+				   LCD_ShowxNum(5+5*25,i*15,system_status_list_2[i].myid,3,16,0X80);
+				   LCD_ShowxNum(5+6*25,i*15,system_status_list_2[i].size,3,16,0X80);
+				   LCD_ShowxNum(5+7*25,i*15,system_status_list_2[i].work_status,3,16,0X80);	
+			       LCD_ShowxNum(5+8*25,i*15,system_status_list_2[i].work_time,3,16,0X80);
+				   }
+				 for(i=1;i<33;i++)
+				 	{
+				   if(system_status_list_1[i].work_status==0){order_trans_rs485(mybox.myid,i,1,1,1); LED0=!LED0;}//验证从机9的控制和工作计时
+				   if(system_status_list_2[i].work_status==0){order_trans_rs485(mybox.myid,i,1,2,1);}//
+				 	}
 		       }
 			 	if(go==3){// LED0=!LED0;
 				  order_trans_rs485(mybox.myid,2,2,0,0);
@@ -276,8 +274,7 @@ void myled_task(void *pdata)
 while(1)
 {
 if(mybox.master==1)OSTaskSuspend( MYLED_TASK_PRIO);
-//power_computer();
-key_idset();
+if(led_lock==0)key_idset();
 delay_ms(100);
 }
 }
@@ -292,19 +289,29 @@ int subcontrol(u8 i,u8 j)//给下下位机放指令
     }
    if(mybox.send==1) //下位机控制
    	{ 	 // LED1=!LED1;
-   	if(i==1&&j==1){GPIO_ResetBits(GPIOA,GPIO_Pin_0);}
-    if(i==1&&j==0){GPIO_SetBits(GPIOA,GPIO_Pin_0);}
-    if(i==2&&j==1){GPIO_ResetBits(GPIOA,GPIO_Pin_8);}
-    if(i==2&&j==0){GPIO_SetBits(GPIOA,GPIO_Pin_8);}
+   	if(i==1&&j==1){GPIO_ResetBits(GPIOA,GPIO_Pin_0);set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);LED0=!LED0; }
+    if(i==1&&j==0){GPIO_SetBits(GPIOA,GPIO_Pin_0);set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);}
+    if(i==2&&j==1){GPIO_ResetBits(GPIOA,GPIO_Pin_8);set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);LED0=!LED0; }
+    if(i==2&&j==0){GPIO_SetBits(GPIOA,GPIO_Pin_8);set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);}
 	return 1;
    	}
-if(mybox.send==2)//修改主机记录数组
+if(mybox.send==2)//查看从机状态
  {
- //	LED1=!LED1;
+ 	LED1=!LED1;
   status_trans_rs485(&mystatus);
 return 2;
  }
-return 3; //操作失败
+ if(mybox.send==3) //关闭刷新led屏幕
+ {
+ led_lock=1;
+ return 3;
+ }
+ if(mybox.send==4) //打开刷新led屏幕
+ {
+  led_lock=0;
+ return 4;
+ }
+return 5; //操作失败
 }
 
 
