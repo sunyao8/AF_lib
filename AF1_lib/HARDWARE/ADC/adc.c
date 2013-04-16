@@ -158,6 +158,12 @@ void  Adc_Init(void)
 	while(ADC_GetCalibrationStatus(ADC1));	 //等待校准结束
  
 //	ADC_SoftwareStartConvCmd(ADC1, ENABLE);		//使能指定的ADC1的软件转换启动功能
+GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_8;
+		 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;		 //推挽输出
+	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; //
+	GPIO_Init(GPIOA, &GPIO_InitStructure);	
+GPIO_SetBits(GPIOA,GPIO_Pin_0);
+GPIO_SetBits(GPIOA,GPIO_Pin_8);
 
 }				  
 //获得ADC值
