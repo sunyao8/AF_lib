@@ -77,8 +77,6 @@ OS_STK MYLED_TASK_STK[MYLED_STK_SIZE];
 //ÈÎÎñº¯Êı
 void myled_task(void *pdata);
   	   
-
-
 extern box mybox;
   
 extern  u16  dog_clock;
@@ -86,7 +84,7 @@ extern  u16  dog_clock;
 extern OS_EVENT * RS485_MBOX,*RS485_STUTAS_MBOX;			//	rs485ÓÊÏäĞÅºÅÁ¿
 
 extern OS_EVENT *Heartbeat;			 //ĞÄÌøĞÅºÅÁ¿
-
+extern OS_EVENT *master_led_task;
 extern u8 cont;//ÓÃÓÚ¸ü¸ÄÖ÷»úºÅµÄ¼Ç´ÎÊıÆ÷
 extern  u8 token[33];//Ö÷»úºÅÁîÅÆ
 
@@ -102,9 +100,9 @@ extern busy_list sort_busy_list_1[33];
 extern busy_list sort_busy_list_2[33];
 
 
-extern u8 hguestnum;
-extern u32 idle_time;
-
+extern u8 hguestnum,gonglvshishu;
+extern u32 idle_time,dianliuzhi;
+extern u16 wugongkvar;
 //½ÓÊÕ»º´æÇø
 
 //////////////////////////////////////////
@@ -115,8 +113,8 @@ int subcontrol(u8,u8);
 
 #define ID  1
 
-#define SIZE_1 10
-#define SIZE_2 5
+#define SIZE_1 20
+#define SIZE_2 10
 #define WORK_STATUS_1	 0//0ÎªÃ»ÓĞ¹¤×÷  1Îª¹¤×÷  2Îª»µµô£¬³õÊ¼»¯Îª0
 #define WORK_STATUS_2    0 
 #define WORK_TIME_1 0
@@ -129,19 +127,19 @@ int main(void)
 	
 	delay_init();	    	 //ÑÓÊ±º¯Êı³õÊ¼»¯	  
 	NVIC_Configuration(); 	 //ÉèÖÃNVICÖĞ¶Ï·Ö×é2:2Î»ÇÀÕ¼ÓÅÏÈ¼¶£¬2Î»ÏìÓ¦ÓÅÏÈ¼¶
- 	LED_Init();			     //LED¶Ë¿Ú³õÊ¼»¯
+// 	LED_Init();			     //LED¶Ë¿Ú³õÊ¼»¯
 /*************************/
+		delay_us(500000);
 	HT1621_Init();
-	delay_us(100000);
 	KEY_Init();          //³õÊ¼»¯Óë°´¼üÁ¬½ÓµÄÓ²¼ş½Ó¿Ú  
 	AT24CXX_Init();			//IIC³õÊ¼»¯
 	Adc_Init();
 /************************************/
 
-		uart_init(9600);LCD_Init();	                                                              //µ÷ÊÔÏÔÊ¾
+//		uart_init(9600);LCD_Init();	                                                              //µ÷ÊÔÏÔÊ¾
 	RS485_Init(9600);	//³õÊ¼»¯RS485
 	TIM4_Int_Init(4999,7199);//10KhzµÄ¼ÆÊıÆµÂÊ£¬¼ÆÊı5K´ÎÎª500ms 
-//	TIM3_Cap_Init(0XFFFF,72-1);	//ÒÔ1MhzµÄÆµÂÊ¼ÆÊı	  //¿ª·¢°åÓÃLCDÊ±£¬±ØĞë×¢µô´Ë¾Ù£¬Òı½Å³åÍ»
+	TIM3_Cap_Init(0XFFFF,72-1);	//ÒÔ1MhzµÄÆµÂÊ¼ÆÊı	  //¿ª·¢°åÓÃLCDÊ±£¬±ØĞë×¢µô´Ë¾Ù£¬Òı½Å³åÍ»
 	 initmybox(ID);
 	 init_mystatus(ID,SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
 	 
@@ -163,7 +161,7 @@ void start_task(void *pdata)
  	OSTaskCreate(master_task,(void *)0,(OS_STK*)&MASTER_TASK_STK[MASTER_STK_SIZE-1],MASTER_TASK_PRIO);	 				   
  	OSTaskCreate(Heartbeat_task,(void *)0,(OS_STK*)&TAKE_TASK_STK[TAKE_STK_SIZE-1],TAKE_TASK_PRIO);
 	OSTaskCreate(Receive_task,(void *)0,(OS_STK*)&Receive_TASK_STK[Receive_STK_SIZE-1],Receive_TASK_PRIO);
-//	OSTaskCreate(myled_task,(void *)0,(OS_STK*)&MYLED_TASK_STK[MYLED_STK_SIZE-1],MYLED_TASK_PRIO);
+	OSTaskCreate(myled_task,(void *)0,(OS_STK*)&MYLED_TASK_STK[MYLED_STK_SIZE-1],MYLED_TASK_PRIO);
  	OSTaskSuspend(START_TASK_PRIO);	//¹ÒÆğÆğÊ¼ÈÎÎñ.
 	OS_EXIT_CRITICAL();				//ÍË³öÁÙ½çÇø(¿ÉÒÔ±»ÖĞ¶Ï´ò¶Ï)
 }
@@ -196,7 +194,7 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
  /**************Ö÷»úÈÎÎñ**********************/
   void master_task(void *pdata)	  //Ö÷»úÈÎÎñ
   {	  OS_CPU_SR cpu_sr=0;
-      u8 go=4,i;
+      u8 go=0,i;
 	  // u8 *msg,err;
 	  u8 try_cont=0;
 	  for(i=1;i<33;i++){set_statuslist_1(i,0,0,0);set_statuslist_2(i,0,0,0);}//³õÊ¼»¯Á½¸ö×´Ì¬¶ÓÁ
@@ -211,10 +209,18 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
 	   if(go==0)
 	  { myled(); 
 	//    LED0=!LED0;
-	    OSSemPost(Heartbeat);
-		  delay_ms(100);
-			
-      }
+	   heartbeat(1);
+		 if((gonglvshishu)<90)
+		 	{
+		 	offset_idlepower();
+		       }
+		 if((gonglvshishu)>95)
+		 	{
+                        unload_power(system_status_list_1,system_status_list_2);
+		       }
+			                      if((idle_time>5)&&(gonglvshishu>90&&gonglvshishu<95))
+                {idle_time=0;turn_power(system_status_list_1,system_status_list_2);}
+	   }
 		if(go==1)
 		{
 		{OSSemPost(Heartbeat);delay_ms(100);try_cont++;}  //°ÑÑÓÊ±·â×°³Éº¯Êı
@@ -275,6 +281,7 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
 				
 				if(go==4){ 
 					s8 c=0,d=0;
+                       myled() ;             
 			led_on_off(0);		 //¹Ø±Õ´Ó»úled¹¦ÄÜ£¬·ÀÖ¹Í¨ĞÅ¿ØÖÆĞÅÏ¢µÄ¶ªÊ§
 
 							 for(i=1;i<33;i++)
@@ -294,13 +301,15 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
 				   LCD_ShowxNum(5+1*25,i*15,sort_busy_list_1[i].myid,3,16,0X80);
 				   LCD_ShowxNum(5+2*25,i*15,sort_busy_list_1[i].size,3,16,0X80);
 				   LCD_ShowxNum(5+3*25,i*15,sort_busy_list_1[i].work_time,3,16,0X80);	
-			        //  LCD_ShowxNum(5+4*25,i*15,system_status_list_1[i].work_time,3,16,0X80);
+			          LCD_ShowxNum(5+4*25,i*15,idle_time,3,16,0X80);
+//				    LCD_ShowxNum(5+5*25,i*15,dianliuzhi,3,16,0X80);
+  
 					}
 					for(i=1;i<=c;i++)
 					{
-				   LCD_ShowxNum(5+5*25,i*15,sort_busy_list_2[i].myid,3,16,0X80);
-				   LCD_ShowxNum(5+6*25,i*15,sort_busy_list_2[i].size,3,16,0X80);
-				   LCD_ShowxNum(5+7*25,i*15,sort_busy_list_2[i].work_time,3,16,0X80);	
+				   LCD_ShowxNum(5+6*25,i*15,sort_busy_list_2[i].myid,3,16,0X80);
+				   LCD_ShowxNum(5+7*25,i*15,sort_busy_list_2[i].size,3,16,0X80);
+				   LCD_ShowxNum(5+8*25,i*15,sort_busy_list_2[i].work_time,3,16,0X80);	
 			       
 				   }
 
@@ -313,13 +322,13 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
 
 //				   }
 				 	
-							 for(i=1;i<33;i++)
+/*							 for(i=1;i<33;i++)
 					{
 			   if(system_status_list_1[i].work_status==1){order_trans_rs485(mybox.myid,i,1,1,0);  delay_us(10000);}//ÑéÖ¤´Ó»ú9µÄ¿ØÖÆºÍ¹¤×÷¼ÆÊ±
 				   if(system_status_list_2[i].work_status==1){order_trans_rs485(mybox.myid,i,1,2,0);  delay_us(10000);}//				     
 				 	}
 
-                       
+    */                   
 				
 				     //´ò¿ª´Ó»úled¹¦ÄÜ
                         	led_on_off(1);
@@ -373,6 +382,10 @@ if(led_lock==0)key_idset();
 delay_ms(100);
 }
 }
+
+
+
+
  /***********************************/
 
 int subcontrol(u8 i,u8 j)//¸øÏÂÏÂÎ»»ú·ÅÖ¸Áî	 

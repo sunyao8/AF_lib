@@ -36,7 +36,7 @@
 //如果想串口中断接收，请不要注释以下宏定义
 #define EN_USART2_RX 	1			//0,不接收;1,接收.
 
-#define TIME_OUT 50
+#define TIME_OUT 5
 
  typedef struct  
 { 
@@ -103,10 +103,10 @@ void set_statuslist_2(u8,u8,u8,u8);
 void delay_time(u32);//本系统的延时函数，time*450ms
 void inquiry_slave_status(u8);//查询从机状态并保存到从机状态表中，参数id是要查询的从机号
 u16 power_computer(void);
-void offset_idlepower(status_list_node *,status_list_node *);
+void offset_idlepower(void);
 void turn_power(status_list_node *,status_list_node *);
 void unload_power(status_list_node *,status_list_node *);
-u8 gonglvyinshu(void);
+void gonglvyinshu(void);
 s8 sort_busynode_list(busy_list *,status_list_node *);
 s8 sort_idlenode_list(idle_list *,status_list_node *);
 void myled(void);
@@ -114,6 +114,8 @@ void try(void);
 u16 comp_16(u16 ,u16 );
 void led_on_off(u8 ) ;
 extern int subcontrol(u8,u8);
+void heartbeat(u8);
+
 #endif	   
 
 

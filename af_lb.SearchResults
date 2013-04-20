@@ -1,36 +1,15 @@
----- LED0 Matches (4 in 0 files) ----
-485ANN.c (af1_lib\hardware\485ann):		   // LED0=!LED0;
-485ANN.c (af1_lib\hardware\485ann):		  LED0=!LED0;
----- LED0 Matches (12 in 0 files) ----
-Main.c (af1_lib\user):	//    LED0=!LED0;
-Main.c (af1_lib\user):		  {	//LED0=!LED0;  
-Main.c (af1_lib\user):			// LED0=!LED0; 
-Main.c (af1_lib\user):			  // LED0=!LED0; 
-Main.c (af1_lib\user):			   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist(i,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time)
-Main.c (af1_lib\user):			 	if(go==3){// LED0=!LED0;
----- LED1 Matches (8 in 0 files) ----
-Main.c (af1_lib\user):	 	{		LED1=!LED1;	  
-Main.c (af1_lib\user):	   //LED1=!LED1;
-Main.c (af1_lib\user):   	{ 	 // LED1=!LED1;
-Main.c (af1_lib\user): //	LED1=!LED1;
----- LED1 Matches (6 in 0 files) ----
-485ANN.c (af1_lib\hardware\485ann):				if(RS485_RX_BUF[1]=='#'){OSMboxPost(RS485_STUTAS_MBOX,(void*)&RS485_RX_BUF);LED1=!LED1;}
-485ANN.c (af1_lib\hardware\485ann):	 //  LED1=!LED1;
-485ANN.c (af1_lib\hardware\485ann):   if(err==OS_ERR_TIMEOUT){LED1=!LED1;set_statuslist_1(id,0,2,0);set_statuslist_2(id,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time) 
----- LED0 Matches (16 in 0 files) ----
-Main.c (af1_lib\user):	//    LED0=!LED0;
-Main.c (af1_lib\user):		  {	//LED0=!LED0;  
-Main.c (af1_lib\user):			// LED0=!LED0; 
-Main.c (af1_lib\user):			  // LED0=!LED0; 
-Main.c (af1_lib\user):			   if(err==OS_ERR_TIMEOUT){LED0=!LED0;set_statuslist(i,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time)
-Main.c (af1_lib\user):				   if(system_status_list_1[9].work_status==0){order_trans_rs485(mybox.myid,9,1,1,1);LED0=!LED0}
-Main.c (af1_lib\user):				   if(system_status_list_2[9].work_status==0){order_trans_rs485(mybox.myid,9,1,2,1);;LED0=!LED0}
-Main.c (af1_lib\user):			 	if(go==3){// LED0=!LED0;
----- LED1 Matches (8 in 0 files) ----
-Main.c (af1_lib\user):	 	{		//LED1=!LED1;	  
-Main.c (af1_lib\user):	   //LED1=!LED1;
-Main.c (af1_lib\user):   	{ 	 // LED1=!LED1;
-Main.c (af1_lib\user): 	LED1=!LED1;
----- 38 Matches (0 in 0 files) ----
----- 37 Matches (#count#) ----
----- count Matches (#count#) ----
+---- flag Matches (16 in 0 files) ----
+485ANN.c (af1_lib\hardware\485ann):u8 flag=1;
+485ANN.c (af1_lib\hardware\485ann):   u8 i,flag=0;
+485ANN.c (af1_lib\hardware\485ann):	  flag=cont;
+485ANN.c (af1_lib\hardware\485ann):      if(id==(flag)){
+485ANN.c (af1_lib\hardware\485ann):  flag=1;
+485ANN.c (af1_lib\hardware\485ann): ///if(flag==1)
+485ANN.c (af1_lib\hardware\485ann):  /// flag=0;
+485ANN.c (af1_lib\hardware\485ann):  flag=1;
+485ANN.c (af1_lib\hardware\485ann):   u8 i,j=1,k,t,flag=0;
+485ANN.c (af1_lib\hardware\485ann):						if(flag==0)flag=1;
+485ANN.c (af1_lib\hardware\485ann):   if(flag==1)
+485ANN.c (af1_lib\hardware\485ann):   u8 i,j=1,k,t,w,flag=0;
+485ANN.c (af1_lib\hardware\485ann):						if(flag==0)flag=1;
+485ANN.c (af1_lib\hardware\485ann):   if(flag==1)
