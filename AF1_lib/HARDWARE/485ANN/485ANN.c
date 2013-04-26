@@ -61,15 +61,15 @@ u8 co[]={100,100,100,100,100,99,99,99,99,98, //0~9
 
 /**********************²âÊÔÎÞ¹¦¹¦ÂÊ Êý¾Ý*************************************/
 
-s16 wogong_try=50;
 
 /************************************************************/
+u16 wugong_95,wugong_computer;
 
-
-extern u8 id_num; 
+extern u8 id_num;
 extern u8 grafnum,tempshuzhi,gonglvshishu;
 extern u16 dianya_zhi,	wugongkvar,k;
 extern u32	dianliuzhi;
+s8 L_C_flag;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
 /*****************************************************/
  void TIM4_Int_Init(u16 arr,u16 psc)
 {
@@ -419,14 +419,14 @@ void led_on_off(u8 on_off) //²ÎÊýÖµ1 Îª´ò¿ªled £¬0Îª¹Ø±Õled
 u8 i;
 if(on_off==1)
     {
-        for(i=1;i<80;i++)
+        for(i=1;i<65;i++)
 	   { order_trans_rs485(mybox.myid,0,4,0,0);
              delay_us(10000);
           }	 
     }
 if(on_off==0)
     {
-        for(i=1;i<80;i++)
+        for(i=1;i<65;i++)
 	   { order_trans_rs485(mybox.myid,0,3,0,0);
              delay_us(10000);
           }	 
@@ -528,14 +528,12 @@ for(i=1;i<33;i++)inquiry_slave_status(i);
 
 	for(j=1;j<=label_idle1;j++)
 		{
-                            myled();
-		              delay_time(1);
+                            delay_time(5);
+				myled();
 		              if(gonglvshishu>90)break;
 		                 else{
-                    if(wogong_try>=(sort_idle_list_1[j].size))
+                    if((wugong_computer)>=(sort_idle_list_1[j].size))
 			             {    order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,1,1,1);delay_us(10000);
-				//	wugongkvar=wugongkvar-(sort_idle_list_1[j].size)*10;//Ä£Äâ²âÊÔ£¬Êµ¼ÊÇé¿öÓ¦È¥µô¸Ã¾
-				wogong_try=wogong_try-sort_idle_list_1[j].size;
                     	               }
 		   	                  }
 		   }
@@ -545,15 +543,13 @@ for(i=1;i<33;i++)inquiry_slave_status(i);
  		{
 	for(j=1;j<=label_idle2;j++)
 		{
-                                      myled();
-					  delay_time(1);
+                                     delay_time(5);
+                                     myled();
 		   if(gonglvshishu>90)break;
 		   else{
-                          if(wogong_try>=(sort_idle_list_2[j].size))
+                          if((wugong_computer)>=(sort_idle_list_2[j].size))
                           	            {
 						  order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,1,2,1);delay_us(10000);
-					//    wugongkvar=wugongkvar-(sort_idle_list_2[j].size)*10;//Ä£Äâ²âÊÔ£¬Êµ¼ÊÇé¿öÓ¦¸ÃÈ¥µô¸Ã¾ä
-				wogong_try=wogong_try-sort_idle_list_2[j].size;
 						  }
 		   	 }
 	    }
@@ -651,31 +647,96 @@ void unload_power(status_list_node *list_1,status_list_node *list_2)
   turn_flag=1;
   led_on_off(0);
 for(i=1;i<33;i++)inquiry_slave_status(i);
- label_busy2=sort_busynode_list(sort_busy_list_2,list_2);
- label_busy1=sort_busynode_list(sort_busy_list_1,list_1);
+ label_busy2=sort_busynode_list_asc(sort_busy_list_2,list_2);
+ label_busy1=sort_busynode_list_asc(sort_busy_list_1,list_1);
 
-	for(j=1;j<=label_busy2;j++)
+
+	for(j=1;j<=label_busy1&&label_busy1>0;j++)
 		{
-                                  myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
-					 delay_time(1);
+                     delay_time(5);
+			myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
 		   if(gonglvshishu<95)break;
-		   else{	order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0);delay_us(10000);}
-        }
+		   else {	
+						if((wugong_computer-wugong_95)>sort_busy_list_1[label_busy1].size)
+				   {order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0);delay_us(10000);label_busy1--;}
+
+						if((wugong_computer-wugong_95)<=sort_busy_list_1[j].size)
+				   {order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0);delay_us(10000);}
+
+		          }
+	    }
 
 if(gonglvshishu>95)
  {
-	for(j=1;j<=label_busy1;j++)
+	for(j=1;j<=label_busy2&&label_busy2>0;j++)
 		{
-                          myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
-		              delay_time(1);
+                        delay_time(5);
+	                 myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
 		   if(gonglvshishu<95)break;
-		   else {	order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0);delay_us(10000);}
-	    }
+		   else{	                               
+                                						if((wugong_computer-wugong_95)>sort_busy_list_2[label_busy2].size)
+				   {order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,1,0);delay_us(10000);label_busy2--;}
+
+			   if((wugong_computer-wugong_95)<=sort_busy_list_2[j].size)
+		   	       {order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0);delay_us(10000);}
+                            
+
+		           }
+        }
 
 }
 				led_on_off(1);
 
 }
+
+void C_unload_power(status_list_node *list_1,status_list_node *list_2)
+{
+ u8 i,j;
+ s8 label_busy1,label_busy2;
+  turn_flag=1;
+  led_on_off(0);
+for(i=1;i<33;i++)inquiry_slave_status(i);
+ label_busy2=sort_busynode_list_asc(sort_busy_list_2,list_2);
+ label_busy1=sort_busynode_list_asc(sort_busy_list_1,list_1);
+
+	for(j=1;j<=label_busy1&&label_busy1!=0;j++)
+		{
+
+                     delay_time(5);
+			myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
+		   if(L_C_flag==1)break;
+		   else {	
+                            						if((wugong_computer)>sort_busy_list_1[label_busy1].size)
+				   {order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0);delay_us(10000);label_busy1--;}
+
+                                                            if((wugong_computer)<=sort_busy_list_1[j].size)
+			{order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0);delay_us(10000);}
+		          }
+	    }
+
+if(L_C_flag==0)
+ {
+	for(j=1;j<=label_busy2&&label_busy2!=0;j++)
+		{
+                            delay_time(5);
+				myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
+		   if(L_C_flag==1)break;
+		   else{	
+                                                            if((wugong_computer)>sort_busy_list_2[label_busy2].size)
+				   {order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,1,0);delay_us(10000);label_busy2--;}
+
+														  if((wugong_computer)<=sort_busy_list_2[j].size)
+			{order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0);delay_us(10000);}
+
+		   }
+        }
+
+
+}
+				led_on_off(1);
+
+}
+
 s8 sort_idlenode_list(idle_list *sort_idle_list,status_list_node *list)//¿ÕÏÐÓÐÐò¶ÓÁÐ(°´ÈÝÁ¿´óÐ¡ÓÉ´óµ½Ð¡ÅÅÁÐ£¬·µ»Ø¿ÕÏÐ½Úµã¸öÊý)
 {
    u8 i,j=1,k,t,flag=0;
@@ -704,6 +765,19 @@ s8 sort_idlenode_list(idle_list *sort_idle_list,status_list_node *list)//¿ÕÏÐÓÐÐ
 	   sort_idle_list[j+1].size=t;
 
       }
+for(i=1;i<count;i++)
+   {if(sort_idle_list[i].myid==mybox.myid)
+           {   t=sort_idle_list[i].size;
+	        k=sort_idle_list[i].myid;
+             for(j=i;j<count;j++)
+              	{sort_idle_list[j].size=sort_idle_list[j+1].size;
+                       sort_idle_list[j].myid=sort_idle_list[j+1].myid;
+			 }
+			 sort_idle_list[count].size=t;
+			 sort_idle_list[count].myid=k;
+			 break;
+           }
+    }
    	}
     return count;
 }
@@ -736,10 +810,73 @@ for(i=1;i<33;i++){sort_time_list[i].myid=0;sort_time_list[i].work_time=0;sort_ti
    }
 }
 */
-s8 sort_busynode_list(busy_list *sort_busy_list,status_list_node *list)//Ã¦ÂµÓÐÐò¶ÓÁÐ(°´ÈÝÁ¿´óÐ¡ÓÉÐ¡µ½´óÅÅÁÐ)
+s8 sort_busynode_list(busy_list *sort_busy_list,status_list_node *list)//Ã¦ÂµÓÐÐò¶ÓÁÐ(°´¹¤×÷Ê±¼ä´óÐ¡ÓÉ´óµ½Ð¡ÅÅÁÐ)
 {
-   u8 i,j=1,k,t,w,flag=0;
-   s8 count=0;
+   u8 i,j=1,g,f,k,t,w,flag=0;
+   s8 count=0,count_time=0;
+   for(i=1;i<33;i++){sort_busy_list[i].myid=0;sort_busy_list[i].size=0;}
+   for(i=1;i<33;i++){
+   	              if(list[i].work_status==1&&list[i].size!=0)
+                      { sort_busy_list[j].myid=list[i].myid;
+				        sort_busy_list[j].size=list[i].size;
+						sort_busy_list[j].work_time=list[i].work_time;
+					    j++;
+						if(flag==0)flag=1;
+						count++;
+   	              	  }
+                    }
+   if(flag==1)
+   	{
+   for(i=2;i<=count;i++)
+   	 {
+       t=sort_busy_list[i].size;
+	   k=sort_busy_list[i].myid;
+	   w=sort_busy_list[i].work_time;
+	   for(j=i-1;j>=1&&t>sort_busy_list[j].size;j--)
+	   	{sort_busy_list[j+1].myid=sort_busy_list[j].myid;
+         sort_busy_list[j+1].size=sort_busy_list[j].size;
+		 sort_busy_list[j+1].work_time=sort_busy_list[j].work_time;
+	    }
+	   sort_busy_list[j+1].myid=k;
+	   sort_busy_list[j+1].size=t;
+       sort_busy_list[j+1].work_time=w;
+     }
+   /**********************************************/
+   for(i=1;i<=count;i=i+count_time)
+      { count_time=0;
+        for(j=i;j<=count;j++)
+        	{ if(sort_busy_list[i].size==sort_busy_list[j].size){count_time++;}
+                     else break;
+		}
+		
+		for(g=i+1;g<=i+count_time-1;g++)
+			{
+                               t=sort_busy_list[g].size;
+	                        k=sort_busy_list[g].myid;
+	                        w=sort_busy_list[g].work_time;
+                 	   for(f=g-1;f>=i&&w>sort_busy_list[f].work_time;f--)
+	   	{
+	   	 sort_busy_list[f+1].myid=sort_busy_list[f].myid;
+               sort_busy_list[f+1].size=sort_busy_list[f].size;
+		 sort_busy_list[f+1].work_time=sort_busy_list[f].work_time;
+	       }
+	      sort_busy_list[f+1].myid=k;
+	      sort_busy_list[f+1].size=t;
+             sort_busy_list[f+1].work_time=w;
+		       }
+
+      }
+           
+   
+   	}
+  return count;
+}
+
+
+s8 sort_busynode_list_asc(busy_list *sort_busy_list,status_list_node *list)//Ã¦ÂµÓÐÐò¶ÓÁÐ(°´¹¤×÷ÈÝÁ¿´óÐ¡ÓÉ´óµ½Ð¡ÅÅÁÐ)
+{
+   u8 i,j=1,g,f,k,t,w,flag=0;
+   s8 count=0,count_time=0;
    for(i=1;i<33;i++){sort_busy_list[i].myid=0;sort_busy_list[i].size=0;}
    for(i=1;i<33;i++){
    	              if(list[i].work_status==1&&list[i].size!=0)
@@ -767,9 +904,39 @@ s8 sort_busynode_list(busy_list *sort_busy_list,status_list_node *list)//Ã¦ÂµÓÐÐ
 	   sort_busy_list[j+1].size=t;
        sort_busy_list[j+1].work_time=w;
      }
+   /**********************************************/
+   for(i=1;i<=count;i=i+count_time)
+      { count_time=0;
+        for(j=i;j<=count;j++)
+        	{ if(sort_busy_list[i].size==sort_busy_list[j].size){count_time++;}
+                     else break;
+		}
+		
+		for(g=i+1;g<=i+count_time-1;g++)
+			{
+                               t=sort_busy_list[g].size;
+	                        k=sort_busy_list[g].myid;
+	                        w=sort_busy_list[g].work_time;
+                 	   for(f=g-1;f>=i&&w>sort_busy_list[f].work_time;f--)
+	   	{
+	   	 sort_busy_list[f+1].myid=sort_busy_list[f].myid;
+               sort_busy_list[f+1].size=sort_busy_list[f].size;
+		 sort_busy_list[f+1].work_time=sort_busy_list[f].work_time;
+	       }
+	      sort_busy_list[f+1].myid=k;
+	      sort_busy_list[f+1].size=t;
+             sort_busy_list[f+1].work_time=w;
+		       }
+
+      }
+           
+   
    	}
   return count;
 }
+
+
+
 
 
 
@@ -783,7 +950,7 @@ void inquiry_slave_status(u8 id)
         u8 err;
    order_trans_rs485(mybox.myid,id,2,0,0);
   // delay_us(10000);
-   msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/25,&err);
+   msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
    if(err==OS_ERR_TIMEOUT){set_statuslist_1(id,0,2,0);set_statuslist_2(id,0,2,0);}//(u8 id, u8 size, u8 work_status, u8 work_time) 
 	else 
 	  rs485_trans_status(msg);
@@ -919,26 +1086,32 @@ void gonglvyinshu()
 			 {
 			 	phase_zhi=tempb*360/tempa;
 		   	 	gonglvshishu=si[phase_zhi];
+				L_C_flag=1;
 			 }
 			  if((10000<=tempb)&&(tempb<=15000))			 //¸ÐÐÔ¸ºÔØ·´½Ó
 			 {
 			 	phase_zhi=((tempb*360)/tempa)-180;
 		   	 	gonglvshishu=si[phase_zhi];
+				L_C_flag=1;
 			 }
 			 if((5000<tempb)&&(tempb<10000))	   //ÈÝÐÔ¸ºÔØÕý½Ó
 			 {
 				/*ÏÔÊ¾ÈÝÐÔ¹¦ÂÊ·ûºÅ*/
 			 	phase_zhi=180-tempb*360/tempa;
 		   	 	gonglvshishu=si[phase_zhi];
+				L_C_flag=0;
 			 }
 			 if((15000<tempb)&&(tempb<20000))	   //ÈÝÐÔ¸ºÔØ·´½Ó
 			 {
 				/*ÏÔÊ¾ÈÝÐÔ¹¦ÂÊ·ûºÅ*/
 			 	phase_zhi=360-tempb*360/tempa;
 		   	 	gonglvshishu=si[phase_zhi];
+				L_C_flag=0;
 			 }
-			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*k*co[phase_zhi])/100000);
-			
+			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*k*co[phase_zhi])/1000000);
+			wugong_95= (uint16_t)((17.32*dianliuzhi*dianya_zhi*k*31)/1000000);//¹¦ÂÊÒòËØÔÚ0.95Ê±µÄ£¬ÎÞ¹¦¹¦Â
+			wugong_computer=(uint16_t)((17.32*dianliuzhi*dianya_zhi*k*co[phase_zhi])/1000000);
+                    wugongkvar=wugong_computer;
 			TIM3CH1_CAPTURE_STA=0;			//¿ªÆôÏÂÒ»´Î²¶»ñ
 		
 		}
