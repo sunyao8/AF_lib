@@ -287,14 +287,12 @@ void RS485_Send_Data(u8 *buf,u8 len)
 
 }
 
-void initmybox(u8 id)//初始化自身信息
+void initmybox()//初始化自身信息
 {  	 
   
- // for(i=1;i<33;i++)token[i]=0;//初始化令牌
   mybox.master=0;
- //  token[1]=1;
  mybox.start='&';
- mybox.myid=id;
+ mybox.myid=AT24CXX_ReadOneByte(0x0010);
  mybox.source=0;
  mybox.destination=0;
  mybox.send=0;
@@ -437,9 +435,9 @@ if(on_off==0)
 /*****************************回馈信息函数********************************************/
 
 
-void init_mystatus(u8 myid,u8 size_1,u8 size_2,u8 work_status_1,u8 work_status_2,u8 work_time_1,u8 work_time_2)
+void init_mystatus(u8 size_1,u8 size_2,u8 work_status_1,u8 work_status_2,u8 work_time_1,u8 work_time_2)
 {
-mystatus.myid=myid;
+mystatus.myid= mybox.myid;
 mystatus.size[0]=size_1;
 mystatus.size[1]=size_2;
 mystatus.work_status[0]=work_status_1;
@@ -1045,7 +1043,7 @@ void gonglvyinshu()
 {
         u16 i;
 		u32 tempa,tempb;
-		u16 adc_vx,adc_vmax=0,adc_ix,adc_imax=0;
+		u16 adc_vx,adc_vmax=0,adc_ix,adc_imax=0,adc_tmp1=0,adc_tmp2=0;
 		u8 phase_zhi;
 		 float temp;
 
@@ -1071,6 +1069,11 @@ void gonglvyinshu()
 	  dianliuzhi=(u32)(60*temp-74);
 	  adc_vmax=0;
 	  adc_imax=0;
+	  /******************温度*****************************/
+	  adc_tmp1=Get_Adc_Average(ADC_Channel_5,10);
+	  adc_tmp2=Get_Adc_Average(ADC_Channel_6,10);
+	  tempshuzhi=(u8)(258-((adc_tmp1*255)/4096));
+	  /**************************************************/
 	  if(TIM3CH1_CAPTURE_STA&0X80)//完成一次采集
 		{
 			tempa=TIM3CH1_CAPTURE_STA&0X3F;
@@ -1119,15 +1122,39 @@ void gonglvyinshu()
 //无功功率
 }	 
 
+void LIGHT(u8 status_1,u8 status_2)
+{
+if(status_1==1&&status_2==0)HT595_Send_Byte((GREEN_RED)|background_light_on);
+if(status_1==0&&status_2==1)HT595_Send_Byte((RED_GREEN)|background_light_on);
+if(status_1==1&&status_2==1)HT595_Send_Byte((GREEN_GREEN)|background_light_on);
+if(status_1==0&&status_2==0)HT595_Send_Byte((RED_RED)|background_light_on);
+}
 
 void myled()
   {
 gonglvyinshu();//计算功率，电压电流与显示按键分开
-key_idset();//按键与显示功能
+key_lcd();
 delay_ms(50);//没有延时，屏会死机
 }
 
+void Alarm(void)
+{
+	   if(tempshuzhi>50)
+	   	{   
+	   	    HT595_Send_Byte(YELLOW_YELLOW|background_light_on);//过温报警
 
+
+	     }
+	 else if(tempshuzhi<50)
+	 {
+		       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//恢复常态
+	 }
+
+}
 	 
-
+void key_lcd()
+{
+key_idset();//按键与显示功能
+Alarm();//是否需要报警
+}
 

@@ -24,10 +24,14 @@ void HT1621_Init(void)
 {		
 	RCC->APB2ENR|=1<<3;    //使能PORTB时钟
 											  
-	GPIOB->CRL&=0X000F0FFF;
-	GPIOB->CRL|=0X33303000;//PB3 4 5 6推挽输出
 
-	GPIOB->ODR|=1<<3;      //PB3输出高 
+      	GPIOB->CRH&=0XFFFFFF0F;
+	GPIOB->CRH|=0X00000030;//PB9
+
+	GPIOB->CRL&=0X000FFFFF;
+	GPIOB->CRL|=0X33300000;//PB 4 5 6推挽输出
+
+	GPIOB->ODR|=1<<9;      //PB9输出高 
 	GPIOB->ODR|=1<<5;      //PB5输出高 
 	GPIOB->ODR|=1<<6;      //PB6输出高
 	GPIOB->ODR|=1<<7;      //PB7输出高 
@@ -277,3 +281,23 @@ void Graf_setid(u8 idnum)
    WriteAll_1621(8,num1237Seg+2*idnumgewei,2);	//显示idnum个数位
 
 }
+
+void HT595_Send_Byte(u8 state)
+{                        
+    u8 t;    	    
+    for(t=0;t<8;t++)
+    {    
+		DATA=0;          
+        if((state&0x80)==0)
+		WR=0;
+		else WR=1;
+		delay_us(100);
+		DATA=1;
+        state<<=1; 	  
+
+    }
+	RCK_595=0;
+	delay_us(10);
+	RCK_595=1;
+}
+

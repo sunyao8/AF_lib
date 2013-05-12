@@ -22,10 +22,21 @@
 #define CS PBout(5) 	// ht1621片选
 #define WR PBout(7)	// ht1621写时钟,74hc595数据端	
 #define DATA PBout(6)	//ht1621数据，74hc595数据输入时钟端
-#define RCK_595 PBout(3)	//74hc595输出锁存器锁存时钟端
+#define RCK_595 PBout(9)	//74hc595输出锁存器锁存时钟端
+
+
+#define GREEN_RED 0X73
+#define RED_GREEN 0X6D
+#define RED_RED 0X75
+#define GREEN_GREEN 0X6B
+#define YELLOW_YELLOW 0X61
+#define OFF_OFF 0X7F
+#define background_light_on 0X80
 
 void HT1621_Init(void);//初始化1621
 void SendBit_1621(u8 data,u8 cnt);
+void HT595_Send_Byte(u8);
+
 void SendDataBit_1621(u8 data,u8 cnt);
 void SendCmd(u8 command);
 void Write_1621(u8 addr,u8 data);

@@ -11,7 +11,7 @@
 #include <math.h>
 #include "adc.h"
 #include "timer.h"								  
-
+#include "Ht1621.h"
 	  		  	
  
  typedef struct  
@@ -89,7 +89,7 @@ typedef struct
  }time_list;
 */
 void turn_master_id(u8);
-void initmybox(u8);
+void initmybox(void);
 void TIM4_Int_Init(u16,u16);
 void TIM3_Cap_Init(u16 arr,u16 psc);
 void order_trans_rs485(u8,u8,u8,u8,u8);
@@ -97,7 +97,7 @@ int rs485_trans_order(u8 *);
 void rs485_trans_status(u8 *);
 void status_trans_rs485(status_box *);
 void set_now_mystatus(u8 ,u8 ,u8 ,u8,u8,u8,u8);
-void init_mystatus(u8 ,u8 ,u8 ,u8,u8,u8,u8);
+void init_mystatus(u8 ,u8 ,u8,u8,u8,u8);
 void set_statuslist_1(u8,u8,u8,u8);
 void set_statuslist_2(u8,u8,u8,u8);
 void delay_time(u32);//本系统的延时函数，time*450ms
@@ -117,6 +117,9 @@ u16 comp_16(u16 ,u16 );
 void led_on_off(u8 ) ;
 extern int subcontrol(u8,u8);
 void heartbeat(u8);
+void Alarm(void);
+void key_lcd(void);
+void LIGHT(u8,u8);
 
 #endif	   
 
