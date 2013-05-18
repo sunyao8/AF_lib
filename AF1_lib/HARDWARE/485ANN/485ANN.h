@@ -108,6 +108,7 @@ void turn_power(status_list_node *,status_list_node *);
 void unload_power(status_list_node *,status_list_node *);
 void C_unload_power(status_list_node *, status_list_node *);
 void gonglvyinshu(void);
+void temperature(void);   //µçÈİÆ÷ÎÂ¶È¼ì²â
 s8 sort_busynode_list(busy_list *,status_list_node *);
 s8 sort_busynode_list_asc(busy_list *,status_list_node *);
 s8 sort_idlenode_list(idle_list *,status_list_node *);

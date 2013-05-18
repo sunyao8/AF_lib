@@ -36,6 +36,8 @@ u8 rs485buf[LEN_control];//发送控制信息
 u8 statusbuf[LEN_status];//发送状态信息
 
 u32 idle_time=0;
+
+u8 alarm_lock=0;
 /****************************************************************/
 u8 si[]={0,2,3,5,7,9,10,12,14,16,        //0~9
 	   	17,19,21,22,24,26,28,29,31,33,  //10~19
@@ -293,6 +295,7 @@ void initmybox()//初始化自身信息
   mybox.master=0;
  mybox.start='&';
  mybox.myid=AT24CXX_ReadOneByte(0x0010);
+///mybox.myid=1;
  mybox.source=0;
  mybox.destination=0;
  mybox.send=0;
@@ -331,8 +334,8 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
   dianya_zhi=comp_16(tx_r485[6],tx_r485[7]);
   dianliuzhi=comp_16(tx_r485[8],tx_r485[9]);
   wugongkvar=comp_16(tx_r485[10],tx_r485[11]);
-  tempshuzhi=tx_r485[12];
-  gonglvshishu=tx_r485[13];
+  //tempshuzhi=tx_r485[12];
+  gonglvshishu=tx_r485[12];
    if(mybox.myid==tx_r485[2]||tx_r485[2]==0)//判断是否是发给本机的信息或是广播信息
    	{
    	 mybox.source=tx_r485[1];
@@ -359,10 +362,10 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 	rs485buf[9]=((dianliuzhi& (uint16_t)0xFF00)>>8);
 	rs485buf[10]=(wugongkvar& (uint16_t)0x00FF);
 	rs485buf[11]=((wugongkvar& (uint16_t)0xFF00)>>8);
-	rs485buf[12]=tempshuzhi;
-	rs485buf[13]=gonglvshishu;
-	rs485buf[14]='*';//协议尾
-	RS485_Send_Data(rs485buf,15);//发送5个字节
+	//rs485buf[12]=tempshuzhi;
+	rs485buf[12]=gonglvshishu;
+	rs485buf[13]='*';//协议尾
+	RS485_Send_Data(rs485buf,14);//发送5个字节
 	if(destination==source){mybox.send=send;subcontrol(relay, message);}//如果信息发给的自己
 	OS_EXIT_CRITICAL();	
 }
@@ -598,6 +601,7 @@ if(turn_label_idle1!=0||turn_label_idle2!=0)
 							    sort_idle_list_1[turn_label_idle1].myid=k;
 								sort_idle_list_1[turn_label_idle1].size=t;
 						     } 
+							 break;//防止本循环中对i，重复匹配投切
 					   }
 				    }
 	          }
@@ -625,7 +629,7 @@ if(turn_label_idle1!=0||turn_label_idle2!=0)
 							    sort_idle_list_2[turn_label_idle2].myid=k;
 								sort_idle_list_2[turn_label_idle2].size=t;
 						     }
-
+                                         break;//防止本循环中对i，重复匹配投切
 					   }
 
 				    }
@@ -1043,7 +1047,7 @@ void gonglvyinshu()
 {
         u16 i;
 		u32 tempa,tempb;
-		u16 adc_vx,adc_vmax=0,adc_ix,adc_imax=0,adc_tmp1=0,adc_tmp2=0;
+		u16 adc_vx,adc_vmax=0,adc_ix,adc_imax=0;
 		u8 phase_zhi;
 		 float temp;
 
@@ -1069,11 +1073,6 @@ void gonglvyinshu()
 	  dianliuzhi=(u32)(60*temp-74);
 	  adc_vmax=0;
 	  adc_imax=0;
-	  /******************温度*****************************/
-	  adc_tmp1=Get_Adc_Average(ADC_Channel_5,10);
-	  adc_tmp2=Get_Adc_Average(ADC_Channel_6,10);
-	  tempshuzhi=(u8)(258-((adc_tmp1*255)/4096));
-	  /**************************************************/
 	  if(TIM3CH1_CAPTURE_STA&0X80)//完成一次采集
 		{
 			tempa=TIM3CH1_CAPTURE_STA&0X3F;
@@ -1116,38 +1115,65 @@ void gonglvyinshu()
 			wugong_computer=(uint16_t)((17.32*dianliuzhi*dianya_zhi*k*co[phase_zhi])/1000000);
                     wugongkvar=wugong_computer;
 			TIM3CH1_CAPTURE_STA=0;			//开启下一次捕获
+			
 		
 		}
 
 //无功功率
-}	 
+}
+
+void temperature()   //电容器温度检测
+{
+ u16 adc_tmp1=0,adc_tmp2=0;
+       adc_tmp1=Get_Adc_Average(ADC_Channel_5,10);
+	  adc_tmp2=Get_Adc_Average(ADC_Channel_6,10);
+	  tempshuzhi=(u8)(258-((adc_tmp1*255)/4096));
+
+}
 
 void LIGHT(u8 status_1,u8 status_2)
 {
-if(status_1==1&&status_2==0)HT595_Send_Byte((GREEN_RED)|background_light_on);
-if(status_1==0&&status_2==1)HT595_Send_Byte((RED_GREEN)|background_light_on);
-if(status_1==1&&status_2==1)HT595_Send_Byte((GREEN_GREEN)|background_light_on);
-if(status_1==0&&status_2==0)HT595_Send_Byte((RED_RED)|background_light_on);
+if(status_1==0&&status_2==1)HT595_Send_Byte((GREEN_RED)|background_light_on);
+if(status_1==1&&status_2==0)HT595_Send_Byte((RED_GREEN)|background_light_on);
+if(status_1==0&&status_2==0)HT595_Send_Byte((GREEN_GREEN)|background_light_on);
+if(status_1==1&&status_2==1)HT595_Send_Byte((RED_RED)|background_light_on);
+if(status_1==2&&status_2==2)HT595_Send_Byte((YELLOW_YELLOW)|background_light_on);
+
 }
 
 void myled()
   {
 gonglvyinshu();//计算功率，电压电流与显示按键分开
+temperature();
 key_lcd();
 delay_ms(50);//没有延时，屏会死机
 }
 
 void Alarm(void)
 {
-	   if(tempshuzhi>50)
+	   if((tempshuzhi>=70||dianya_zhi>=410||dianya_zhi<=340)&&alarm_lock==0)
 	   	{   
-	   	    HT595_Send_Byte(YELLOW_YELLOW|background_light_on);//过温报警
+                                           if(mybox.master==1)//主机发布通知延时信息
+								  {
+								       delay_time(80);
+								  }
+					GPIO_SetBits(GPIOA,GPIO_Pin_0);
+					delay_us(100000);
+                    GPIO_SetBits(GPIOA,GPIO_Pin_8);
+		       set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],2,2,0,0);
+		       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//过温常态
+		       alarm_lock=1;
 
-
-	     }
-	 else if(tempshuzhi<50)
+	   }
+	 else if(tempshuzhi<70&&dianya_zhi<410&&dianya_zhi>340&&alarm_lock==1)
 	 {
-		       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//恢复常态
+                             if(mybox.master==1)//主机
+				 {    
+				      delay_time(80);
+				}
+		    set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,0,0,0);
+		    LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//恢复常态
+		    alarm_lock=0;
 	 }
 
 }
