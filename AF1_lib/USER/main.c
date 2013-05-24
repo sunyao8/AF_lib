@@ -126,8 +126,8 @@ int subcontrol(u8,u8);
 
 //#define ID  1
 
-#define SIZE_1 50
-#define SIZE_2 25
+#define SIZE_1 5
+#define SIZE_2 5
 #define WORK_STATUS_1	 0//0为没有工作  1为工作  2为坏掉，初始化为0
 #define WORK_STATUS_2    0 
 #define WORK_TIME_1 0
@@ -234,7 +234,7 @@ void Receive_task(void *pdate)//从机任务
 		 	{
                         unload_power(system_status_list_1,system_status_list_2);
 		       }
-	        if((idle_time>5)&&(gonglvshishu>90&&gonglvshishu<95)&&(L_C_flag==1))
+	        if((idle_time>500)&&(gonglvshishu>90&&gonglvshishu<95)&&(L_C_flag==1))
                 {idle_time=0;turn_power(system_status_list_1,system_status_list_2);}
 		if(L_C_flag==0){C_unload_power(system_status_list_1, system_status_list_2);}
 	   }

@@ -19,12 +19,13 @@ u8 cont=0;//用于更改主机号的记次数器
 u32 life_time_1=0;
 u32 life_time_2=0;
 u8 turn_flag=1;//轮休使用变量
-s8 turn_label_idle1=0,turn_label_idle2=0;//轮休使用变量
+s8 turn_label_idle=0;//轮休使用变量
 
 box mybox;
 status_box mystatus;
 idle_list sort_idle_list_1[33];
 idle_list sort_idle_list_2[33];
+turn_node turn_idle_list[65];
 busy_list sort_busy_list_1[33];
 busy_list sort_busy_list_2[33];
 
@@ -569,74 +570,71 @@ s8 label_busy1,label_busy2;
    			led_on_off(0);
    for(i=1;i<33;i++)inquiry_slave_status(i); 
    			led_on_off(1);
-   turn_label_idle1=sort_idlenode_list(sort_idle_list_1,list_1);//得到空闲队列
-   turn_label_idle2=sort_idlenode_list(sort_idle_list_2,list_2);
+   turn_label_idle=turn_idlenode_list(turn_idle_list,list_1,list_2);//得到空闲队列
    }  
    turn_flag=0;
 
-if(turn_label_idle1!=0||turn_label_idle2!=0)
+if(turn_label_idle!=0)
 {	      led_on_off(0);
    for(i=1;i<33;i++)inquiry_slave_status(i);   			
     label_busy1=sort_busynode_list(sort_busy_list_1,list_1);//刷新list_1的busy表的每个工作节点的工作时间
     label_busy2=sort_busynode_list(sort_busy_list_2,list_2);//刷新list_2的busy表的每个工作节点的工作时间
 
-	if(turn_label_idle1!=0)
-		{
       for(i=1;i<=label_busy1;i++)
-	  	{if(sort_busy_list_1[i].work_time>=TIME_OUT)
+	  	{ if(sort_busy_list_1[i].work_time>=TIME_OUT)
       	      {  
-                for(j=1;j<=turn_label_idle1;j++)
+				for(j=1;j<=turn_label_idle;j++)
                 	{  
-                       if(sort_busy_list_1[i].size==sort_idle_list_1[j].size)
-                       	{ order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,1,1,1);delay_us(10000);
+                       if(sort_busy_list_1[i].size==turn_idle_list[j].size)
+                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1);delay_us(10000);
 					                                           delay_us(100000);//实验看灯延时，真实情况注掉
                              order_trans_rs485(mybox.myid,sort_busy_list_1[i].myid,1,1,0);delay_us(10000);
 						 	{ k=sort_busy_list_1[i].myid;
                                                     t=sort_busy_list_1[i].size;
                                                        sort_busy_list_1[i].work_time=0;
-							  for(q=j;q<turn_label_idle1;q++)
-							  	{sort_idle_list_1[q].myid=sort_idle_list_1[q+1].myid;
-                                                          sort_idle_list_1[q].size=sort_idle_list_1[q+1].size;
+							  for(q=j;q<turn_label_idle;q++)
+							  	{turn_idle_list[q].myid=turn_idle_list[q+1].myid;
+                                                          turn_idle_list[q].size=turn_idle_list[q+1].size;
+								turn_idle_list[q].group=turn_idle_list[q+1].group;
 							      }
-							    sort_idle_list_1[turn_label_idle1].myid=k;
-								sort_idle_list_1[turn_label_idle1].size=t;
+							    turn_idle_list[turn_label_idle].myid=k;
+							    turn_idle_list[turn_label_idle].size=t;
+							   turn_idle_list[turn_label_idle].group=1;
 						     } 
-							 break;//防止本循环中对i，重复匹配投切
+                                           break;//防止本循环中对i，重复匹配投切
+
 					   }
 				    }
-	          }
+      	}
+      	}
 
-	     }
-     }
-	
-    if(turn_label_idle2!=0)
-     { for(i=1;i<=label_busy2;i++)
-	  	{if(sort_busy_list_2[i].work_time>=TIME_OUT)
+	      for(i=1;i<=label_busy2;i++)	
+   { if(sort_busy_list_2[i].work_time>=TIME_OUT)
       	      {  
-                for(j=1;j<=turn_label_idle2;j++)
+				for(j=1;j<=turn_label_idle;j++)
                 	{  
-                       if(sort_busy_list_2[i].size==sort_idle_list_2[j].size)
-                       	{ order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,1,2,1);delay_us(10000);
-					   					            delay_us(100000);//实验看灯延时，真实情况注掉
+                       if(sort_busy_list_2[i].size==turn_idle_list[j].size)
+                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1);delay_us(10000);
+					                                           delay_us(100000);//实验看灯延时，真实情况注掉
                              order_trans_rs485(mybox.myid,sort_busy_list_2[i].myid,1,2,0);delay_us(10000);
-						  	{ k=sort_busy_list_2[i].myid;
+						 	{ k=sort_busy_list_2[i].myid;
                                                     t=sort_busy_list_2[i].size;
-                                                        sort_busy_list_2[i].work_time=0;
-							  for(q=j;q<turn_label_idle2;q++)
-							  	{sort_idle_list_2[q].myid=sort_idle_list_2[q+1].myid;
-                                                          sort_idle_list_2[q].size=sort_idle_list_2[q+1].size;
-							        }
-							    sort_idle_list_2[turn_label_idle2].myid=k;
-								sort_idle_list_2[turn_label_idle2].size=t;
-						     }
-                                         break;//防止本循环中对i，重复匹配投切
+                                                       sort_busy_list_2[i].work_time=0;
+							  for(q=j;q<turn_label_idle;q++)
+							  	{turn_idle_list[q].myid=turn_idle_list[q+1].myid;
+                                                          turn_idle_list[q].size=turn_idle_list[q+1].size;
+								turn_idle_list[q].group=turn_idle_list[q+1].group;
+							      }
+							    turn_idle_list[turn_label_idle].myid=k;
+							    turn_idle_list[turn_label_idle].size=t;
+							   turn_idle_list[turn_label_idle].group=2;
+						     } 
+                                           break;//防止本循环中对i，重复匹配投切
+
 					   }
-
 				    }
-	          }
-
-	     }
-     }  
+      	}
+      	}
    // if(label_idle1==0&&label_idle2==0)break;//无空闲队列 
  led_on_off(1);
    }
@@ -783,6 +781,92 @@ for(i=1;i<count;i++)
    	}
     return count;
 }
+
+
+
+/**************将第一组空闲队列和第二组空闲队列组成一组进行排序轮 休***************************/
+
+
+s8 turn_idlenode_list(turn_node *turn_idle_list,status_list_node *list_1,status_list_node *list_2)//空闲有序队列(按容量大小由大到小排列，返回空闲节点个数)
+{
+   u8 i,j=1,k,t,g,flag=0;
+   s8 count=0;
+   for(i=1;i<65;i++){turn_idle_list[i].myid=0;turn_idle_list[i].size=0;turn_idle_list[i].group=0;}
+   for(i=1;i<33;i++){
+   	              if(list_1[i].work_status==0&&list_1[i].size!=0)
+                      { turn_idle_list[j].myid=list_1[i].myid;
+				        turn_idle_list[j].size=list_1[i].size;
+						turn_idle_list[j].group=1;
+					          j++;
+						count++;
+						if(flag==0)flag=1;//如果没有空闲节点
+   	              	  }
+                    }
+
+for(i=1;i<33;i++)
+		{
+   	              if(list_2[i].work_status==0&&list_2[i].size!=0)
+                      { turn_idle_list[j].myid=list_2[i].myid;
+				        turn_idle_list[j].size=list_2[i].size;
+						turn_idle_list[j].group=2;
+					          j++;
+						count++;
+						if(flag==0)flag=1;//如果没有空闲节点
+   	              	  }
+                    }
+   
+   if(flag==1)
+   	{
+   for(i=2;i<=count;i++)
+   	 {
+       t=turn_idle_list[i].size;
+	   k=turn_idle_list[i].myid;
+	   g=turn_idle_list[i].group;
+	   for(j=i-1;j>=1&&t>turn_idle_list[j].size;j--)
+	   	{turn_idle_list[j+1].myid=turn_idle_list[j].myid;
+                turn_idle_list[j+1].size=turn_idle_list[j].size;
+		  turn_idle_list[j+1].group=turn_idle_list[j].group;
+	    }
+	            turn_idle_list[j+1].myid=k;
+	           turn_idle_list[j+1].size=t;
+			turn_idle_list[j+1].group=g;
+
+      }
+for(i=1;i<count;i++)
+   {if(turn_idle_list[i].myid==mybox.myid)
+           {   t=turn_idle_list[i].size;
+	        k=turn_idle_list[i].myid;
+		g=turn_idle_list[i].group;
+             for(j=i;j<count;j++)
+              	{turn_idle_list[j].size=turn_idle_list[j+1].size;
+                       turn_idle_list[j].myid=turn_idle_list[j+1].myid;
+			turn_idle_list[j].group=turn_idle_list[j+1].group;
+			 }
+			 turn_idle_list[count].size=t;
+			 turn_idle_list[count].myid=k;
+			 turn_idle_list[count].group=g;
+			 break;
+           }
+    }
+   	}
+    return count;
+}
+
+
+
+
+
+
+
+
+/***************************************************************************************************************************/
+
+
+
+
+
+
+
 /*
 void sort_timenode_list(time_list *sort_time_list,status_list_node *list)//时间有序队列(按工作时间由大到小排列)
 {
@@ -1151,7 +1235,7 @@ delay_ms(50);//没有延时，屏会死机
 
 void Alarm(void)
 {
-	   if((tempshuzhi>=70||dianya_zhi>=410||dianya_zhi<=340)&&alarm_lock==0)
+	   if((tempshuzhi>=70||dianya_zhi>=440||dianya_zhi<=340)&&alarm_lock==0)
 	   	{   
                                            if(mybox.master==1)//主机发布通知延时信息
 								  {
@@ -1165,7 +1249,7 @@ void Alarm(void)
 		       alarm_lock=1;
 
 	   }
-	 else if(tempshuzhi<70&&dianya_zhi<410&&dianya_zhi>340&&alarm_lock==1)
+	 else if(tempshuzhi<70&&dianya_zhi<440&&dianya_zhi>340&&alarm_lock==1)
 	 {
                              if(mybox.master==1)//主机
 				 {    

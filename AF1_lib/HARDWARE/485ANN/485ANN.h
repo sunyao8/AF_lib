@@ -36,7 +36,7 @@
 //如果想串口中断接收，请不要注释以下宏定义
 #define EN_USART2_RX 	1			//0,不接收;1,接收.
 
-#define TIME_OUT 5
+#define TIME_OUT 500
 
  typedef struct  
 { 
@@ -69,6 +69,12 @@ typedef struct
 
 }idle_list;
 
+typedef struct
+{
+  u8 myid;
+  u8 group;
+  u8 size;
+}turn_node;
 
 typedef struct
 {
@@ -121,6 +127,7 @@ void heartbeat(u8);
 void Alarm(void);
 void key_lcd(void);
 void LIGHT(u8,u8);
+s8 turn_idlenode_list(turn_node *,status_list_node *,status_list_node *);//空闲有序队列(按容量大小由大到小排列，返回空闲节点个数)
 
 #endif	   
 
