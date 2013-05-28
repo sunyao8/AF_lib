@@ -32,6 +32,11 @@ busy_list sort_busy_list_2[33];
 status_list_node system_status_list_1[33];
 status_list_node system_status_list_2[33];
 
+u8 idle_done_nodelist_1[33];
+u8 idle_done_nodelist_2[33];
+u8 done_list1_flag=0,done_list2_flag=0;
+u8 done_count_1=0,done_count_2=0;
+
 //u8 rs485buf[LEN_control];//·¢ËÍ¿ØÖÆÐÅÏ¢
 u8 rs485buf[LEN_control];//·¢ËÍ¿ØÖÆÐÅÏ¢
 u8 statusbuf[LEN_status];//·¢ËÍ×´Ì¬ÐÅÏ¢
@@ -530,13 +535,30 @@ for(i=1;i<33;i++)inquiry_slave_status(i);
 
 	for(j=1;j<=label_idle1;j++)
 		{
-                            delay_time(5);
+                         if(done_list1_flag==0)
+                            {
+
+				   for(i=0;i<33;i++)
+				   	    {
+                                          idle_done_nodelist_1[i]=0;
+
+				           }
+				   done_list1_flag=1;
+			       }
+			delay_time(5);
 				myled();
 		              if(gonglvshishu>90)break;
 		                 else{
                     if((wugong_computer)>=(sort_idle_list_1[j].size))
-			             {    order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,1,1,1);delay_us(10000);
-                    	               }
+			             {    if(idle_done_nodelist_1[sort_idle_list_1[j].myid]==0)
+			                   {
+			                   order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,1,1,1);delay_us(10000);
+                                          idle_done_nodelist_1[sort_idle_list_1[j].myid]=1;
+					    }
+					}
+					done_count_1++;
+					if(done_count_1==label_idle1)
+						{done_count_1=0;done_list1_flag=0;}
 		   	                  }
 		   }
 
@@ -545,13 +567,31 @@ for(i=1;i<33;i++)inquiry_slave_status(i);
  		{
 	for(j=1;j<=label_idle2;j++)
 		{
+		                         if(done_list2_flag==0)
+                            {
+
+				   for(i=0;i<33;i++)
+				   	    {
+                                          idle_done_nodelist_2[i]=0;
+
+				           }
+				   done_list2_flag=1;
+			       }
+
                                      delay_time(5);
                                      myled();
 		   if(gonglvshishu>90)break;
 		   else{
                           if((wugong_computer)>=(sort_idle_list_2[j].size))
-                          	            {
+                          	            {  if(idle_done_nodelist_2[sort_idle_list_2[j].myid]==0)
+                          	                {     
 						  order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,1,2,1);delay_us(10000);
+                                                 idle_done_nodelist_2[sort_idle_list_2[j].myid]=1;
+                          	                }
+						  done_count_2++;
+						  	if(done_count_2==label_idle2)
+						  		{done_count_2=0;done_list2_flag=0;}
+						  
 						  }
 		   	 }
 	    }
@@ -675,7 +715,7 @@ if(gonglvshishu>95)
 		   if(gonglvshishu<95)break;
 		   else{	                               
                                 						if((wugong_computer-wugong_95)>sort_busy_list_2[label_busy2].size)
-				   {order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,1,0);delay_us(10000);label_busy2--;}
+				   {order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0);delay_us(10000);label_busy2--;}
 
 			   if((wugong_computer-wugong_95)<=sort_busy_list_2[j].size)
 		   	       {order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0);delay_us(10000);}
@@ -723,7 +763,7 @@ if(L_C_flag==0)
 		   if(L_C_flag==1)break;
 		   else{	
                                                             if((wugong_computer)>sort_busy_list_2[label_busy2].size)
-				   {order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,1,0);delay_us(10000);label_busy2--;}
+				   {order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0);delay_us(10000);label_busy2--;}
 
 														  if((wugong_computer)<=sort_busy_list_2[j].size)
 			{order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0);delay_us(10000);}
@@ -1152,11 +1192,13 @@ void gonglvyinshu()
 		 adc_imax=adc_ix;
 	  }
 	  temp=(float)adc_vmax*(3.3/4096);
-	 dianya_zhi=(u16)(518*temp-663);
+	 dianya_zhi=(u16)(518*temp-679);
 	  temp=(float)adc_imax*(3.3/4096);
-	  dianliuzhi=(u32)(60*temp-74);
+	  dianliuzhi=(u32)(60*temp-80);
 	  adc_vmax=0;
 	  adc_imax=0;
+	  	  if(dianliuzhi<7){dianliuzhi=0;gonglvshishu=100;}//ÂË³ýÔÓ²¨£¬Ð¡ÓÚ7Ê±£¬ËµÃ÷ÒÑ¾­ÎÞ¸ºÔØ
+	  	  else{
 	  if(TIM3CH1_CAPTURE_STA&0X80)//Íê³ÉÒ»´Î²É¼¯
 		{
 			tempa=TIM3CH1_CAPTURE_STA&0X3F;
@@ -1194,6 +1236,8 @@ void gonglvyinshu()
 		   	 	gonglvshishu=si[phase_zhi];
 				L_C_flag=0;
 			 }
+
+	  	}
 			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*k*co[phase_zhi])/1000000);
 			wugong_95= (uint16_t)((17.32*dianliuzhi*dianya_zhi*k*31)/1000000);//¹¦ÂÊÒòËØÔÚ0.95Ê±µÄ£¬ÎÞ¹¦¹¦Â
 			wugong_computer=(uint16_t)((17.32*dianliuzhi*dianya_zhi*k*co[phase_zhi])/1000000);
