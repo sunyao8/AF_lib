@@ -36,8 +36,22 @@
 //如果想串口中断接收，请不要注释以下宏定义
 #define EN_USART2_RX 	1			//0,不接收;1,接收.
 
-#define TIME_OUT 500
+#define TIME_OUT 200
 
+#define ALL_NODE_LCD_UNLOCK 3
+#define ALL_NODE_LCD_LOCK 4
+#define IDLE_NODE_LCD_LOCK  5
+#define BUSY_NODE_LCD_LCOK 6
+
+
+#define FIND_ALL_STATUS 7
+#define FIND_IDLE_STATUS  8
+#define FIND_BUSY_NODE_STATUS 9
+
+
+
+
+/***********************************/
  typedef struct  
 { 
   u8 myid;      //本电容箱ID号
@@ -107,7 +121,7 @@ void init_mystatus(u8 ,u8 ,u8,u8,u8,u8);
 void set_statuslist_1(u8,u8,u8,u8);
 void set_statuslist_2(u8,u8,u8,u8);
 void delay_time(u32);//本系统的延时函数，time*450ms
-void inquiry_slave_status(u8);//查询从机状态并保存到从机状态表中，参数id是要查询的从机号
+u8 inquiry_slave_status(u8);//查询从机状态并保存到从机状态表中，参数id是要查询的从机号
 u16 power_computer(void);
 void offset_idlepower(void);
 void turn_power(status_list_node *,status_list_node *);
@@ -128,7 +142,7 @@ void Alarm(void);
 void key_lcd(void);
 void LIGHT(u8,u8);
 s8 turn_idlenode_list(turn_node *,status_list_node *,status_list_node *);//空闲有序队列(按容量大小由大到小排列，返回空闲节点个数)
-
+void scanf_slave_machine(void);
 #endif	   
 
 

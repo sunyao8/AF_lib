@@ -284,20 +284,20 @@ void Graf_setid(u8 idnum)
 
 void HT595_Send_Byte(u8 state)
 {                        
-    u8 t;    	    
+    u8 t; 
+		RCLK_595=0;		    
     for(t=0;t<8;t++)
     {    
 		DATA=0;          
         if((state&0x80)==0)
 		WR=0;
 		else WR=1;
-		delay_us(100);
+		delay_us(3);
 		DATA=1;
         state<<=1; 	  
 
     }
-	RCK_595=0;
-	delay_us(10);
-	RCK_595=1;
-}
 
+	delay_us(10);
+	RCLK_595=1;
+}

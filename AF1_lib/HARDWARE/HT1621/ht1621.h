@@ -22,7 +22,7 @@
 #define CS PBout(5) 	// ht1621片选
 #define WR PBout(7)	// ht1621写时钟,74hc595数据端	
 #define DATA PBout(6)	//ht1621数据，74hc595数据输入时钟端
-#define RCK_595 PBout(9)	//74hc595输出锁存器锁存时钟端
+#define RCLK_595 PBout(9)	//74hc595输出锁存器锁存时钟端
 
 
 #define GREEN_RED 0X73

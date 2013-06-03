@@ -12,7 +12,7 @@ u8 id_num=0;
 u8 grafnum,tempshuzhi,vernum=101,hguestnum=222,gonglvshishu=0;
 u16 dianya_zhi=0,wugongkvar=0;
 u32	dianliuzhi=0;
-u16 k=10;//电流系数
+u16 k=100;//电流系数
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序为控制器设计，未经许可，不得复制外传
 //实验板栋达电子V3.0-1
@@ -40,17 +40,15 @@ void key_idset(void)
 	u8 h;
 	if((KEY0==0)&&m)
 	{
-	   delay_us(10000);
 	   m=0;
-	   if(KEY0==0)
-	   while(KEY0==0)
+	 while(KEY0==0)
 	   	{
-	   	   delay_us(10000);
+	   	   delay_us(3000);
 		   h++;
-		   if(h>=250)break;
+		   if(h>=180)break;
 	   
 	   	}
-			   if(h>=250)
+			   if(h>=180)
 			   {		
 					zhongduan_flag=0;
 						
@@ -110,15 +108,14 @@ void key_idset(void)
 	else if(KEY0==1)
 		{
 		 	m=1;
-			delay_us(10000);
 			 while(KEY0==1)
 			 {
-		   	   delay_us(10000);
+		   	   delay_us(2500);
 			   h++;
-			   if(h>=250)break;
+			   if(h>=200)break;
 	   
-	   		 }
-			   if(h>=250)
+	   		 } 
+			   if(h>=200)
 				 {
 						  zhongduan_flag=1;
 					  	  switch(grafnum)
