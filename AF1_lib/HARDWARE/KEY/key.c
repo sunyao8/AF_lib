@@ -40,15 +40,16 @@ void key_idset(void)
 	u8 h;
 	if((KEY0==0)&&m)
 	{
+           	  // delay_us(10000);
 	   m=0;
 	 while(KEY0==0)
 	   	{
-	   	   delay_us(3000);
+	   	   delay_us(3000);//3000
 		   h++;
 		   if(h>=180)break;
 	   
 	   	}
-			   if(h>=180)
+			   if(h>=180)//180
 			   {		
 					zhongduan_flag=0;
 						
@@ -107,15 +108,16 @@ void key_idset(void)
 	}
 	else if(KEY0==1)
 		{
-		 	m=1;
+                  	  // delay_us(10000);
+			m=1;
 			 while(KEY0==1)
 			 {
-		   	   delay_us(2500);
+		   	   delay_us(2500);//2500
 			   h++;
 			   if(h>=200)break;
 	   
 	   		 } 
-			   if(h>=200)
+			   if(h>=200)//200
 				 {
 						  zhongduan_flag=1;
 					  	  switch(grafnum)

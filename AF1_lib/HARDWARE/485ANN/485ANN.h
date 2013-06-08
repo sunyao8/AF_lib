@@ -28,8 +28,6 @@
 }box;
 #define LEN_control 15
 #define LEN_status 10
-#define MASTER_TASK_PRIO       			3 
-
 
 //#define RS485_TX_EN		PGout(9)	//485模式控制.0,接收;1,发送.开发板用
 #define RS485_TX_EN		PBout(15)	//485模式控制.0,接收;1,发送.本工程用
@@ -42,14 +40,17 @@
 #define ALL_NODE_LCD_LOCK 4
 #define IDLE_NODE_LCD_LOCK  5
 #define BUSY_NODE_LCD_LCOK 6
-
+#define NODE_LCD_LOCK_BASE 80
 
 #define FIND_ALL_STATUS 7
 #define FIND_IDLE_STATUS  8
 #define FIND_BUSY_NODE_STATUS 9
+#define Sub_Order 10
+
+#define second 1
 
 
-
+#define MASTER_TASK_PRIO       			7 
 
 /***********************************/
  typedef struct  
@@ -93,6 +94,14 @@ typedef struct
 typedef struct
 {
   u8 myid;
+  u8 group;
+  u8 size;
+}offset_node;
+
+
+typedef struct
+{
+  u8 myid;
   u8 size;
   u8 work_time;
 
@@ -129,20 +138,24 @@ void unload_power(status_list_node *,status_list_node *);
 void C_unload_power(status_list_node *, status_list_node *);
 void gonglvyinshu(void);
 void temperature(void);   //电容器温度检测
-s8 sort_busynode_list(busy_list *,status_list_node *);
-s8 sort_busynode_list_asc(busy_list *,status_list_node *);
-s8 sort_idlenode_list(idle_list *,status_list_node *);
+u8 sort_busynode_list(busy_list *,status_list_node *);
+u8 sort_busynode_list_asc(busy_list *,status_list_node *);
+u8 sort_idlenode_list(idle_list *,status_list_node *);
+u8 turn_idlenode_list(turn_node *,status_list_node *,status_list_node *);//空闲有序队列(按容量大小由大到小排列，返回空闲节点个数)
 void myled(void);
 void try(void);
 u16 comp_16(u16 ,u16 );
-void led_on_off(u8 ) ;
-extern int subcontrol(u8,u8);
+void led_on_off(u8,u8 ) ;
+extern int slave_control(u8,u8);
 void heartbeat(u8);
 void Alarm(void);
 void key_lcd(void);
 void LIGHT(u8,u8);
-s8 turn_idlenode_list(turn_node *,status_list_node *,status_list_node *);//空闲有序队列(按容量大小由大到小排列，返回空闲节点个数)
 void scanf_slave_machine(void);
+u8 sub_delaytime_15(u8);
+u8 sub_delaytime_5(u8 );
+
+
 #endif	   
 
 
