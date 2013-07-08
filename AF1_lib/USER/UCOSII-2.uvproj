@@ -12,13 +12,13 @@
       <ToolsetName>ARM-ADS</ToolsetName>
       <TargetOption>
         <TargetCommonOption>
-          <Device>STM32F103C8</Device>
+          <Device>STM32F102CB</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <Cpu>IRAM(0x20000000-0x20004FFF) IROM(0x8000000-0x800FFFF) CLOCK(8000000) CPUTYPE("Cortex-M3")</Cpu>
+          <Cpu>IRAM(0x20000000-0x20003FFF) IROM(0x8000000-0x801FFFF) CLOCK(8000000) CPUTYPE("Cortex-M3")</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile>"STARTUP\ST\STM32F10x.s" ("STM32 Startup Code")</StartupFile>
-          <FlashDriverDll>UL2CM3(-O14 -S0 -C0 -N00("ARM Cortex-M3") -D00(1BA00477) -L00(4) -FO7 -FD20000000 -FC800 -FN1 -FF0STM32F10x_128 -FS08000000 -FL010000)</FlashDriverDll>
-          <DeviceId>4235</DeviceId>
+          <FlashDriverDll>UL2CM3(-O14 -S0 -C0 -N00("ARM Cortex-M3") -D00(1BA00477) -L00(4) -FO7 -FD20000000 -FC800 -FN1 -FF0STM32F10x_128 -FS08000000 -FL020000)</FlashDriverDll>
+          <DeviceId>4801</DeviceId>
           <RegisterFile>stm32f10x_lib.h</RegisterFile>
           <MemoryEnv></MemoryEnv>
           <Cmp></Cmp>
@@ -99,11 +99,11 @@
           <SimDllName>SARMCM3.DLL</SimDllName>
           <SimDllArguments></SimDllArguments>
           <SimDlgDll>DARMSTM.DLL</SimDlgDll>
-          <SimDlgDllArguments>-pSTM32F103C8</SimDlgDllArguments>
+          <SimDlgDllArguments>-pSTM32F102CB</SimDlgDllArguments>
           <TargetDllName>SARMCM3.DLL</TargetDllName>
           <TargetDllArguments></TargetDllArguments>
           <TargetDlgDll>TARMSTM.DLL</TargetDlgDll>
-          <TargetDlgDllArguments>-pSTM32F103C8</TargetDlgDllArguments>
+          <TargetDlgDllArguments>-pSTM32F102CB</TargetDlgDllArguments>
         </DllOption>
         <DebugOption>
           <OPTHX>
@@ -263,12 +263,12 @@
               <IRAM>
                 <Type>0</Type>
                 <StartAddress>0x20000000</StartAddress>
-                <Size>0x5000</Size>
+                <Size>0x4000</Size>
               </IRAM>
               <IROM>
                 <Type>1</Type>
                 <StartAddress>0x8000000</StartAddress>
-                <Size>0x10000</Size>
+                <Size>0x20000</Size>
               </IROM>
               <XRAM>
                 <Type>0</Type>
@@ -293,7 +293,7 @@
               <OCR_RVCT4>
                 <Type>1</Type>
                 <StartAddress>0x8000000</StartAddress>
-                <Size>0x10000</Size>
+                <Size>0x20000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -318,7 +318,7 @@
               <OCR_RVCT9>
                 <Type>0</Type>
                 <StartAddress>0x20000000</StartAddress>
-                <Size>0x5000</Size>
+                <Size>0x4000</Size>
               </OCR_RVCT9>
               <OCR_RVCT10>
                 <Type>0</Type>
@@ -345,7 +345,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\HARDWARE\LED;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\USER;..\HARDWARE\WKUP;..\HARDWARE\ADC;..\HARDWARE\DAC;..\HARDWARE\DMA;..\HARDWARE\IIC;..\HARDWARE\24CXX;..\HARDWARE\FLASH;..\UCOSII\CONFIG;..\UCOSII\CORE;..\UCOSII\PORT;..\HARDWARE\TIMER;..\HARDWARE\SRAM;..\HARDWARE\RS485;..\HARDWARE\RTC;..\STM32F10x_FWLib\inc;..\HARDWARE\485ANN;..\HARDWARE\LCD;..\HARDWARE\HT1621;..\HARDWARE\KEY</IncludePath>
+              <IncludePath>..\HARDWARE\LED;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\USER;..\HARDWARE\WKUP;..\HARDWARE\ADC;..\HARDWARE\DAC;..\HARDWARE\DMA;..\HARDWARE\IIC;..\HARDWARE\24CXX;..\HARDWARE\FLASH;..\UCOSII\CONFIG;..\UCOSII\CORE;..\UCOSII\PORT;..\HARDWARE\TIMER;..\HARDWARE\SRAM;..\HARDWARE\RS485;..\HARDWARE\RTC;..\STM32F10x_FWLib\inc;..\HARDWARE\485ANN;..\HARDWARE\LCD;..\HARDWARE\HT1621;..\HARDWARE\KEY;..\STM32F10x_DSP_Lib\inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -689,6 +689,51 @@
               <FileName>485ANN.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\HARDWARE\485ANN\485ANN.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>STM32F10x_DSP_Lib</GroupName>
+          <Files>
+            <File>
+              <FileName>iir_stm32.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\iir_stm32.c</FilePath>
+            </File>
+            <File>
+              <FileName>PID_C_stm32.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\PID_C_stm32.c</FilePath>
+            </File>
+            <File>
+              <FileName>cr4_fft_64_stm32.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\asm\arm\cr4_fft_64_stm32.s</FilePath>
+            </File>
+            <File>
+              <FileName>cr4_fft_256_stm32.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\asm\arm\cr4_fft_256_stm32.s</FilePath>
+            </File>
+            <File>
+              <FileName>cr4_fft_1024_stm32.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\asm\arm\cr4_fft_1024_stm32.s</FilePath>
+            </File>
+            <File>
+              <FileName>fir_stm32.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\asm\arm\fir_stm32.s</FilePath>
+            </File>
+            <File>
+              <FileName>iirarma_stm32.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\asm\arm\iirarma_stm32.s</FilePath>
+            </File>
+            <File>
+              <FileName>PID_stm32.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STM32F10x_DSP_Lib\src\asm\arm\PID_stm32.s</FilePath>
             </File>
           </Files>
         </Group>

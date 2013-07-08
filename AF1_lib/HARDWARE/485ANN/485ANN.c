@@ -6,6 +6,8 @@
 #include "stm32f10x_adc.h"
 #include "key.h"
 #include "math.h"
+#include "stm32_dsp.h"
+
 /***********************************************************************/
 u16 RS485_RX_BUF[64]; 		//½ÓÊÕ»º³å,×î´ó64¸ö×Ö½Ú
 //½ÓÊÕµ½µÄÊý¾Ý³¤¶È
@@ -57,27 +59,17 @@ u8 statusbuf[LEN_status];//·¢ËÍ×´Ì¬ÐÅÏ¢
 
 
 u8 alarm_lock=0;
+u8 phase_zhi=0;
 /****************************************************************/
-u8 si[]={0,0,0,5,7,9,10,12,14,16,        //0~9
-	   	17,19,21,22,24,26,28,29,31,33,  //10~19
-		34,36,37,39,41,42,44,45,47,48,  //20~29
-		50,52,53,54,56,57,59,60,62,63,	//30~39
-		64,66,67,68,69,71,72,73,74,75,	//40~49
-		77,78,79,80,81,82,83,84,85,86,	//50~59
-		87,87,88,89,90,91,91,92,93,93,	//60~69
-		94,95,95,96,96,97,97,97,98,98,	//70~79
-		98,99,99,99,99,100,100,100,100,100,100	//80~90
-		};
-u8 co[]={100,100,100,100,100,99,99,99,99,98, //0~9
-          98,98,97,97,97,96,96,95,95,94,	  //10~19
-          93,93,92,91,91,90,89,88,87,87,	  //20~29
-          86,85,84,83,82,81,80,79,78,77,	  //30~39
-          75,74,73,72,71,69,68,67,66,64,	  //40~49
-          63,62,60,59,57,56,54,53,52,50,	  //50~59
-          48,47,45,44,42,41,39,37,36,34,	  //60~69
-          33,31,29,28,26,24,22,21,19,17,	  //70~79
-          16,14,12,10,9,7,5,0,0,0			  //80~90
-		  };
+#define NPT 512            /* NPT = No of FFT point*/
+#define FFT_NM NPT/2
+#define PI2  6.28318530717959
+long lBUFIN_V[NPT];         /* Complex input vector */
+long lBUFOUT_V[FFT_NM];        /* Complex output vector */
+long lBUFIN_I[NPT];         /* Complex input vector */
+long lBUFOUT_I[FFT_NM];        /* Complex output vector */
+double angle[3]; 
+
 
 
 /**********************²âÊÔÎÞ¹¦¹¦ÂÊ Êý¾Ý*************************************/
@@ -209,104 +201,7 @@ s8 L_C_flag;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
 	}
    	OSIntExit();  
 }
-//////////////////////////////////////////////////////////////////////////////////
-void TIM3_Cap_Init(u16 arr,u16 psc)
-{	NVIC_InitTypeDef NVIC_InitStructure;	 
-	RCC->APB1ENR|=1<<1;   	//TIM3 Ê±ÖÓÊ¹ÄÜ 
-	RCC->APB2ENR|=1<<3;    	//Ê¹ÄÜPORTBÊ±ÖÓ  
-	 
-	GPIOB->CRL&=0XFFFFFF00;	//PB0 PB1Çå³ýÖ®Ç°ÉèÖÃ  
-	GPIOB->CRL|=0X00000088;	//PB0 PB1ÊäÈë   
-	GPIOB->ODR&=~(1<<0);		//PB0 PB1ÏÂÀ­
-	GPIOB->ODR&=~(1<<1);
-	  
- 	TIM3->ARR=arr;  		//Éè¶¨¼ÆÊýÆ÷×Ô¶¯ÖØ×°Öµ   
-	TIM3->PSC=psc;  		//Ô¤·ÖÆµÆ÷ 
 
-	TIM3->CCMR2|=1<<0;		//CC3S=01 	Ñ¡ÔñÊäÈë¶Ë IC3Ó³Éäµ½TI3ÉÏ
- 	TIM3->CCMR2|=0<<4; 		//IC3F=0000 ÅäÖÃÊäÈëÂË²¨Æ÷ ²»ÂË²¨
- 	TIM3->CCMR2|=0<<2;  	//IC3PS=00 	ÅäÖÃÊäÈë·ÖÆµ,²»·ÖÆµ 
-
-	///TIM3->CCER|=0<<9; 		//CC3P=0	ÉÏÉýÑØ²¶»ñ1
-	TIM3->CCER|=1<<9;                //CC3P=0	ÏÂÉýÑØ²¶»ñ1
-	TIM3->CCER|=1<<8; 		//CC3E=1 	ÔÊÐí²¶»ñ¼ÆÊýÆ÷1µÄÖµµ½²¶»ñ¼Ä´æÆ÷ÖÐ
-
-	TIM3->DIER|=1<<3;   	//ÔÊÐí²¶»ñ3ÖÐ¶Ï				
-	TIM3->DIER|=1<<0;   	//ÔÊÐí¸üÐÂ1ÖÐ¶Ï	
-
-	TIM3->CCMR2|=1<<8;		//CC4S=01 	Ñ¡ÔñÊäÈë¶Ë IC4Ó³Éäµ½TI4ÉÏ
- 	TIM3->CCMR2|=0<<12; 	//IC4F=0000 ÅäÖÃÊäÈëÂË²¨Æ÷ ²»ÂË²¨
- 	TIM3->CCMR2|=0<<10; 	//IC4PS=00 	ÅäÖÃÊäÈë·ÖÆµ,²»·ÖÆµ 
-
-///	TIM3->CCER|=0<<13; 		//CC4P=0	ÉÏÉýÑØ²¶»ñ
-TIM3->CCER|=1<<13;                      //CC4P=0	ÏÂÉýÑØ²¶»ñ1
-	TIM3->CCER|=1<<12; 		//CC4E=1 	ÔÊÐí²¶»ñ¼ÆÊýÆ÷µÄÖµµ½²¶»ñ¼Ä´æÆ÷ÖÐ
-
-	TIM3->DIER|=1<<4;   	//ÔÊÐí²¶»ñ4ÖÐ¶Ï				
-	TIM3->DIER|=1<<0;   	//ÔÊÐí¸üÐÂÖÐ¶Ï
-	TIM3->CR1|=0x01;    	//Ê¹ÄÜ¶¨Ê±Æ÷2
-	NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;  //TIM3ÖÐ¶Ï
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;  //ÏÈÕ¼ÓÅÏÈ¼¶0¼¶
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 4;  //´ÓÓÅÏÈ¼¶4¼¶
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; //IRQÍ¨µÀ±»Ê¹ÄÜ
-	NVIC_Init(&NVIC_InitStructure);  //³õÊ¼»¯NVIC¼Ä´æÆ÷
-	   
-}
-
-//²¶»ñ×´Ì¬
-//[7]:0,Ã»ÓÐ³É¹¦µÄ²¶»ñ;1,³É¹¦²¶»ñµ½Ò»´Î.
-//[6]:0,»¹Ã»²¶»ñµ½¸ßµçÆ½;1,ÒÑ¾­²¶»ñµ½¸ßµçÆ½ÁË.
-//[5:0]:²¶»ñ¸ßµçÆ½ºóÒç³öµÄ´ÎÊý
-u8  TIM3CH1_CAPTURE_STA=0;	//ÊäÈë²¶»ñ×´Ì¬		    				
-u16	TIM3CH1_CAPTURE_VAL;	//ÊäÈë²¶»ñÖµ
-u16	TIM3CH1_CAPTURE_PHA;	//ÊäÈë²¶»ñÖµ
-//¶¨Ê±Æ÷3ÖÐ¶Ï·þÎñ³ÌÐò	 
-void TIM3_IRQHandler(void)
-{ 		    
-	u16 tsr;
-	tsr=TIM3->SR;
- 	if((TIM3CH1_CAPTURE_STA&0X80)==0)//»¹Î´³É¹¦²¶»ñ	
-	{
-		if(tsr&0X01)//Òç³ö
-		{	    
-			if(TIM3CH1_CAPTURE_STA&0X40)//ÒÑ¾­²¶»ñµ½¸ßµçÆ½ÁË
-			{
-				if((TIM3CH1_CAPTURE_STA&0X3F)==0X3F)//¸ßµçÆ½Ì«³¤ÁË
-				{
-					TIM3CH1_CAPTURE_STA|=0X80;//±ê¼Ç³É¹¦²¶»ñÁËÒ»´Î
-					TIM3CH1_CAPTURE_VAL=0XFFFF;
-				}else TIM3CH1_CAPTURE_STA++;
-			}	 
-		}
-		if(tsr&0x10)//²¶»ñ1·¢Éú²¶»ñÊÂ¼þ
-		{	
-			if(TIM3CH1_CAPTURE_STA&0X40)		//²¶»ñµ½Ò»¸öÏÂ½µÑØ 		
-			{	  			
-				TIM3CH1_CAPTURE_STA|=0X80;		//±ê¼Ç³É¹¦²¶»ñµ½Ò»´Î¸ßµçÆ½Âö¿í
-			    TIM3CH1_CAPTURE_VAL=TIM3->CCR4;	//»ñÈ¡µ±Ç°µÄ²¶»ñÖµ.
-	 		///	TIM3->CCER&=~(1<<1);			//CC1P=0 ÉèÖÃÎªÉÏÉýÑØ²¶»ñ
-			}else  								//»¹Î´¿ªÊ¼,µÚÒ»´Î²¶»ñÉÏÉýÑØ
-			{
-				TIM3CH1_CAPTURE_STA=0;			//Çå¿Õ
-				TIM3CH1_CAPTURE_VAL=0;
-				TIM3CH1_CAPTURE_STA|=0X40;		//±ê¼Ç²¶»ñµ½ÁËÉÏÉýÑØ
-	 			TIM3->CNT=0;					//¼ÆÊýÆ÷Çå¿Õ
-			  ///	TIM3->CCER&=~(1<<1);			//CC1P=0 ÉèÖÃÎªÉÏÉýÑØ²¶»ñ
-			}		    
-		}
-		if(tsr&0x08)
-		{
-		 	if(TIM3CH1_CAPTURE_STA&0X40)		//²¶»ñµ½Ò»¸öÏÂ½µÑØ 		
-			{	  			
-			    TIM3CH1_CAPTURE_PHA=TIM3->CCR3;	//»ñÈ¡µ±Ç°µÄ²¶»ñÖµ.
-			}
-		}			     	    					   
- 	}
-	TIM3->SR=0;//Çå³ýÖÐ¶Ï±êÖ¾Î» 	    
-}
-
-
-//////////////////////////////////////////////////////////
 		void USART2_IRQHandler(void)
 {
  
@@ -1299,20 +1194,90 @@ u8 inquiry_slave_status(u8 id)
 
 /*******************¹¦ÂÊÒòËØÏà¹Øº¯Êý*****************************/
 
-
 void gonglvyinshu()
 {
-        u16 i;
-		u32 tempa,tempb;
 		u16 adc_vx,adc_vmax=0,adc_ix,adc_imax=0;
-		u8 phase_zhi;
-		 float temp;
+		 float adcv,adci,temp;
+	        u16 i=0,flag_v=0,flag_i=0;
+	         int32_t lX,lY;
+
+
 
 		id_num=AT24CXX_ReadOneByte(0x0010);
-	
 
+/*	 for(i=0;i<600;i++)
+	  {
+		 adc_ix=Get_Adc_Average(ADC_Channel_4,2);
+		 if(adc_ix>adc_imax)
+		 adc_imax=adc_ix;
+	  }	
+*/
+//if(adc_imax>=1750)
+        	{
+        for(i=0;i<NPT;i++)
+        	{
+		adci=(Get_Adc_Average(ADC_Channel_4,4)-1520)/10;
+		adcv=(Get_Adc_Average(ADC_Channel_1,4)-1520)/10;                //10
+		adcv=(Get_Adc_Average(ADC_Channel_1,4)-1520)/10;
+		adci=(Get_Adc_Average(ADC_Channel_4,4)-1520)/10;
+		lBUFIN_V[i]=((short)adcv) << 16;
+		lBUFIN_I[i]=((short)adci) << 16;		
+		
+        	}
+
+}
+/*
+if(adc_imax<1750)
+{
+        for(i=0;i<NPT;i++)
+        	{
+		adci=(Get_Adc_Average(ADC_Channel_4,4)-1520)/7;
+		adcv=(Get_Adc_Average(ADC_Channel_1,4)-1520)/7;                //10
+		adcv=(Get_Adc_Average(ADC_Channel_1,4)-1520)/7;
+		adci=(Get_Adc_Average(ADC_Channel_4,4)-1520)/7;
+		lBUFIN_V[i]=((short)adcv) << 16;
+		lBUFIN_I[i]=((short)adci) << 16;		
+		
+        	}
+
+}
+
+*/
+
+			 allphase(lBUFIN_V,lBUFIN_I);
+
+		
+          cr4_fft_256_stm32(lBUFOUT_V, lBUFIN_V, NPT);
+	   cr4_fft_256_stm32(lBUFOUT_I, lBUFIN_I, NPT);
+
+	
+                       	flag_v=5;
+				flag_i=5;		
+		 
+		 lX  = (lBUFOUT_V[flag_v] << 16) >> 16;
+                 lY  = (lBUFOUT_V[flag_v] >> 16);
+				angle[0]=atan2(lY,lX);
+
+				 lX  = (lBUFOUT_I[flag_i] << 16) >> 16;
+                 lY  = (lBUFOUT_I[flag_i] >> 16);
+				angle[1]=atan2(lY,lX);
+				
+				angle[2]=((angle[1]-angle[0])*360)/PI2-90;
+				if(angle[2]>=0.0&&angle[2]<=180)
+					{
+                           		gonglvshishu=(u8)abs(sin((angle[1]-angle[0]))*100-0.5);
+								L_C_flag=0;
+				}
+				
+				else if((angle[2]>=-90.0&&angle[2]<0.0))
+					{
+			     gonglvshishu=(u8)abs(sin((angle[1]-angle[0]))*100+0.5);
+				 L_C_flag=1;
+
+				}	
+				 	
+	
 		 for(i=0;i<80;i++)
-//	for(i=0;i<120;i++)
 	  	 {
 	  	 adc_vx=Get_Adc_Average(ADC_Channel_1,10);
 		  // adc_vx=Get_Adc(ADC_Channel_1);
@@ -1320,98 +1285,62 @@ void gonglvyinshu()
 		   adc_vmax=adc_vx;
 	  	 }
 	   for(i=0;i<80;i++)
-	 //for(i=0;i<120;i++)
 	  {
 		 adc_ix=Get_Adc_Average(ADC_CH4,10);
 		 if(adc_ix>adc_imax)
 		 adc_imax=adc_ix;
 	  }
 
-    	  
 
-           
-	   
 	  temp=((float)adc_vmax*(3.3/4096))*1000;
 	dianya_zhi=((u16)(5*temp-6205))/10;
 	  temp=((float)adc_imax*(3.3/4096))*1000;
 	 dianliuzhi=(((u32)(532*temp-656900))/1000)*(k/100);
-        // dianliuzhi=temp;
-	  adc_vmax=0;
+ 	  adc_vmax=0;
 	  adc_imax=0;
-	  	 // if(dianliuzhi<=1){dianliuzhi=0;gonglvshishu=100;}//ÂË³ýÔÓ²¨£¬Ð¡ÓÚ7Ê±£¬ËµÃ÷ÒÑ¾­ÎÞ¸ºÔØ
-
-		 
-	  if(TIM3CH1_CAPTURE_STA&0X80)//Íê³ÉÒ»´Î²É¼¯
-		{
-			tempa=TIM3CH1_CAPTURE_STA&0X3F;
-			tempa*=65536;					//Òç³öÊ±¼ä×ÜºÍ
-			tempa+=TIM3CH1_CAPTURE_VAL;		//µÃµ½TI1¶ËÐÅºÅÖÜÆÚÊ±¼ä
-                                tempa=20000;                             //ÖÜÆÚÐ´ËÀ£¬²»ÔÙ¼ÆËã
-
-			tempb=TIM3CH1_CAPTURE_STA&0X3F;
-			tempb*=65536;					//Òç³öÊ±¼ä×ÜºÍ
-			tempb+=TIM3CH1_CAPTURE_PHA;		//µÃµ½TI2 TI1ÉÏÉýÑØÊ±¼ä²îÖµ¼´ÏàÎ»²îÊ±¼ä
-
-	 		 if(tempb<=5000)			   //¸ÐÐÔ¸ºÔØÕý½Ó
-			 {
-			 	phase_zhi=(tempb*360/tempa);
-		   	 	gonglvshishu=(si[phase_zhi]);
-				
-				/********************¹¦ÂÊÒòËØ²»¾«È·ÊÊµ±µ÷Õû************************************
-				if(gonglvshishu>69&&gonglvshishu<=89)gonglvshishu=gonglvshishu+2;
-				if(gonglvshishu>=90&&gonglvshishu<94&&gonglvshishu!=90&&gonglvshishu!=91)gonglvshishu=gonglvshishu+2;
-				if(gonglvshishu>=94&&(gonglvshishu!=96&&gonglvshishu!=98&&gonglvshishu!=99&&gonglvshishu!=100))gonglvshishu=gonglvshishu+1;
-				***********************************************************/
-				L_C_flag=1;
-			 }
-			  if((10000<=tempb)&&(tempb<=15000))			 //¸ÐÐÔ¸ºÔØ·´½Ó
-			 {
-			 	phase_zhi=(((tempb*360)/tempa)-180);
-		   	 	gonglvshishu=(si[phase_zhi]);
-				/********************¹¦ÂÊÒòËØ²»¾«È·ÊÊµ±µ÷Õû***********************************
-				if(gonglvshishu>69&&gonglvshishu<=89)gonglvshishu=gonglvshishu+2;
-				if(gonglvshishu>=90&&gonglvshishu<94&&gonglvshishu!=90&&gonglvshishu!=91)gonglvshishu=gonglvshishu+2;
-				if(gonglvshishu>=94&&(gonglvshishu!=96&&gonglvshishu!=98&&gonglvshishu!=99&&gonglvshishu!=100))gonglvshishu=gonglvshishu+1;
-				************************************************************/
-				L_C_flag=1;
-			 }
-			 if((5000<tempb)&&(tempb<10000))	   //ÈÝÐÔ¸ºÔØÕý½Ó
-			 {
-				/*ÏÔÊ¾ÈÝÐÔ¹¦ÂÊ·ûºÅ*/
-			 	phase_zhi=(180-tempb*360/tempa);
-		   	 	gonglvshishu=(si[phase_zhi]);
-				/********************¹¦ÂÊÒòËØ²»¾«È·ÊÊµ±µ÷Õû***********************************
-				if(gonglvshishu>69&&gonglvshishu<=89)gonglvshishu=gonglvshishu-2;
-				if(gonglvshishu>=90&&(gonglvshishu!=99&&gonglvshishu!=100))gonglvshishu=gonglvshishu-2;
-				***********************************************************/
-
-				L_C_flag=0;
-			 }
-			 if((15000<tempb)&&(tempb<20000))	   //ÈÝÐÔ¸ºÔØ·´½Ó
-			 {
-				/*ÏÔÊ¾ÈÝÐÔ¹¦ÂÊ·ûºÅ*/
-			 	phase_zhi=(360-tempb*360/tempa);
-		   	 	gonglvshishu=(si[phase_zhi]);
-								/********************¹¦ÂÊÒòËØ²»¾«È·ÊÊµ±µ÷Õû***********************************
-				if(gonglvshishu>69&&gonglvshishu<=89)gonglvshishu=gonglvshishu-2;
-				if(gonglvshishu>=90&&(gonglvshishu!=99&&gonglvshishu!=100))gonglvshishu=gonglvshishu-2;
-				*********************************************************/
-
-				L_C_flag=0;
-			 }
-
-	  	
-			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*(co[phase_zhi]))/100000);
+			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*(cos((angle[1]-angle[0]))*100))/100000);
 			wugong_95= (uint16_t)((17.32*dianliuzhi*dianya_zhi*31)/100000);//¹¦ÂÊÒòËØÔÚ0.95Ê±µÄ£¬ÎÞ¹¦¹¦Â
-			wugong_computer=(uint16_t)((17.32*dianliuzhi*dianya_zhi*co[phase_zhi])/100000);
+			wugong_computer=(uint16_t)((17.32*dianliuzhi*dianya_zhi*sin((angle[1]-angle[0]))*100/100000));
                     //wugongkvar=wugong_computer;
-			TIM3CH1_CAPTURE_STA=0;			//¿ªÆôÏÂÒ»´Î²¶»ñ
 			
 		
-		}
+		
 
 //ÎÞ¹¦¹¦ÂÊ
 }
+
+
+
+void allphase(long *V,long *I)
+{
+int i=0;
+for(i=0;i<=NPT/2-1;i++)
+{
+V[i]=(i+1)*V[i];
+I[i]=(i+1)*I[i];
+}
+for(i=NPT/2;i<NPT-1;i++)
+{
+V[i]=(NPT-(i+1))*V[i];
+I[i]=(NPT-(i+1))*I[i];
+
+}
+
+for(i=0;i<NPT/2-1;i++)
+{
+V[i+NPT/2]=V[i]+V[i+NPT/2];
+I[i+NPT/2]=I[i]+I[i+NPT/2];
+
+}
+
+for(i=0;i<=NPT/2-1;i++)
+{
+V[i]=V[NPT/2-1+i];
+I[i]=I[NPT/2-1+i];
+
+}
+}
+
 
 void temperature()   //µçÈÝÆ÷ÎÂ¶È¼ì²â
 {

@@ -120,7 +120,6 @@ typedef struct
 void turn_master_id(u8);
 void initmybox(void);
 void TIM4_Int_Init(u16,u16);
-void TIM3_Cap_Init(u16 arr,u16 psc);
 void order_trans_rs485(u8,u8,u8,u8,u8);
 int rs485_trans_order(u8 *);
 void rs485_trans_status(u8 *);
@@ -137,6 +136,7 @@ void turn_power(status_list_node *,status_list_node *);
 void unload_power(status_list_node *,status_list_node *);
 void C_unload_power(status_list_node *, status_list_node *);
 void gonglvyinshu(void);
+void allphase(long *V,long *I);
 void temperature(void);   //µçÈÝÆ÷ÎÂ¶È¼ì²â
 u8 sort_busynode_list(busy_list *,status_list_node *);
 u8 sort_busynode_list_asc(busy_list *,status_list_node *);

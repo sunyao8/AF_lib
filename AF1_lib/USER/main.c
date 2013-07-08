@@ -209,7 +209,6 @@ int main(void)
 ///	uart_init(9600);LCD_Init();	                                                              //调试显示
 	RS485_Init(9600);	//初始化RS485
 	TIM4_Int_Init(9999,7199);//10Khz的计数频率，计数10K次为1000ms 
-	TIM3_Cap_Init(0XFFFF,72-1);	//以1Mhz的频率计数	  //开发板用LCD时，必须注掉此举，引脚冲突
 	 initmybox();
 	 init_mystatus(SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
 	 
