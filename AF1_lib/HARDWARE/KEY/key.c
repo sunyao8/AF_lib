@@ -12,7 +12,6 @@ u8 id_num=0;
 u8 grafnum,tempshuzhi,vernum=101,hguestnum=222,gonglvshishu=0;
 u16 dianya_zhi=0,wugongkvar=0;
 u32	dianliuzhi=0;
-u16 k=100;//电流系数
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序为控制器设计，未经许可，不得复制外传
 //实验板栋达电子V3.0-1

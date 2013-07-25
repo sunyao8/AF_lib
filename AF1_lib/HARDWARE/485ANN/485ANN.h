@@ -41,6 +41,10 @@
 #define IDLE_NODE_LCD_LOCK  5
 #define BUSY_NODE_LCD_LCOK 6
 #define NODE_LCD_LOCK_BASE 80
+#define NODE_LCD_LOCK_OLDFUN 11
+
+
+
 
 #define FIND_ALL_STATUS 7
 #define FIND_IDLE_STATUS  8
@@ -152,8 +156,8 @@ void Alarm(void);
 void key_lcd(void);
 void LIGHT(u8,u8);
 void scanf_slave_machine(void);
-u8 sub_delaytime_15(u8);
-u8 sub_delaytime_5(u8 );
+//u8 sub_delaytime_15(u8);
+//u8 sub_delaytime_5(u8 );
 
 
 #endif	   
