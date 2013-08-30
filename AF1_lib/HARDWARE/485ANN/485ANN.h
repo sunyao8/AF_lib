@@ -54,7 +54,7 @@
 #define second 1
 
 
-#define MASTER_TASK_PRIO       			7 
+#define MASTER_TASK_PRIO       			3
 
 /***********************************/
  typedef struct  

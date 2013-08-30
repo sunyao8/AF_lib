@@ -13,7 +13,7 @@ u16 RS485_RX_BUF[64]; 		//接收缓冲,最大64个字节
 //接收到的数据长度
 u8 RS485_RX_CNT=0;  
 //模式控制
- u16  dog_clock=2;
+ u16  dog_clock=10;
 
  OS_EVENT * RS485_MBOX,* RS485_STUTAS_MBOX;			//	rs485邮箱信号量
  OS_EVENT *Heartbeat;			 //心跳信号量

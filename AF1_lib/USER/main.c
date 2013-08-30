@@ -14,18 +14,8 @@
 //32
 #include "lcd.h"//²âÊÔÓÃ
 /////////////////////////UCOSIIÈÎÎñÉèÖÃ///////////////////////////////////
-//Ö÷ÈÎÎñ
-//ÉèÖÃÈÎÎñÓÅÏÈ¼¶
- #define MAIN_TASK_PRIO                              1               //Ö÷´Ó»ú¶¼ÓĞµÄÈÎÎñ 
-//ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
-#define MAIN_STK_SIZE  					128
-//ÈÎÎñ¶ÑÕ»	
-OS_STK MAIN_TASK_STK[MAIN_STK_SIZE];
-//ÈÎÎñº¯Êı
-void main_task(void *pdata);
-//////////////////////////////////////////////////////////////////////////
 
-#define SETID_TASK_PRIO       			2 
+#define SETID_TASK_PRIO       			1 
 //ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
 #define SETID_STK_SIZE  		    		64
 //ÈÎÎñ¶ÑÕ»
@@ -33,40 +23,7 @@ OS_STK SETID_TASK_STK[SETID_STK_SIZE];
 //ÈÎÎñº¯Êı
 void SETID_task(void *pdata);
 //////////////////////////////////////////////////////////////////////////////
-#define 	M1_OPEN_TASK_PRIO       	       3 
-//ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
-#define  M1_OPEN_STK_SIZE  		    		32
-//ÈÎÎñ¶ÑÕ»
-OS_STK M1_OPEN_TASK_STK[M1_OPEN_STK_SIZE];
-//ÈÎÎñº¯Êı
-void sub_machine1_open_task(void *pdata);
 
-#define M2_OPEN_TASK_PRIO       			4 
-//ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
-#define M2_OPEN_STK_SIZE  		    		32
-//ÈÎÎñ¶ÑÕ»
-OS_STK M2_OPEN_TASK_STK[M2_OPEN_STK_SIZE];
-//ÈÎÎñº¯Êı
-void sub_machine2_open_task(void *pdata);
-
-#define M1_CLOSE_TASK_PRIO       			5 
-//ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
-#define M1_CLOSE_STK_SIZE  		    		32
-//ÈÎÎñ¶ÑÕ»
-OS_STK M1_CLOSE_TASK_STK[M1_CLOSE_STK_SIZE];
-//ÈÎÎñº¯Êı
-void sub_machine1_close_task(void *pdata);
-
-
-#define M2_CLOSE_TASK_PRIO       			6 
-//ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
-#define M2_CLOSE_STK_SIZE  		    		32
-//ÈÎÎñ¶ÑÕ»
-OS_STK M2_CLOSE_TASK_STK[M2_CLOSE_STK_SIZE];
-//ÈÎÎñº¯Êı
-void sub_machine2_close_task(void *pdata);
-
-/////////////////////////////////////////////////////////////////////////////
 //Ö÷»úÈÎÎñ
 //ÉèÖÃÈÎÎñÓÅÏÈ¼¶
 
@@ -80,7 +37,7 @@ OS_STK MASTER_TASK_STK[MASTER_STK_SIZE];
 ////////////////////////////////////////////////////////////////////////////
 //½ÓÊÕÈÎÎñ
 //ÉèÖÃÈÎÎñÓÅÏÈ¼¶
-#define Receive_TASK_PRIO       			8 
+#define Receive_TASK_PRIO       			2 
 //ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
 #define Receive_STK_SIZE  		    		64
 //ÈÎÎñ¶ÑÕ»
@@ -100,7 +57,7 @@ void scanf_task(void *pdata);
 
 ////////////////////////////////////////////////////////////////////////
 
-#define MASTERLED_TASK_PRIO       			10 
+#define MASTERLED_TASK_PRIO       			5 
 //ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
 #define MASTERLED_STK_SIZE  		    		128
 //ÈÎÎñ¶ÑÕ»
@@ -109,7 +66,7 @@ OS_STK MASTERLED_TASK_STK[MASTERLED_STK_SIZE];
 void masterled_task(void *pdata);
 
 ////////////////////////////////////////////////////////////////////////
-#define MYLED_TASK_PRIO       			11 
+#define MYLED_TASK_PRIO       			4 
 //ÉèÖÃÈÎÎñ¶ÑÕ»´óĞ¡
 #define MYLED_STK_SIZE  		    		128
 //ÈÎÎñ¶ÑÕ»
@@ -140,10 +97,6 @@ extern OS_EVENT * RS485_MBOX,*RS485_STUTAS_MBOX;			//	rs485ÓÊÏäĞÅºÅÁ¿
 extern OS_EVENT *Heartbeat;			 //ĞÄÌøĞÅºÅÁ¿
 extern OS_EVENT *master_led_task;
 
-//extern OS_EVENT * sub_machine1_open;		//ÏÂÎ»»úÃüÁîĞÅºÅ
-//extern OS_EVENT * sub_machine1_close;		//ÏÂÎ»»úÃüÁîĞÅºÅ
-//extern OS_EVENT * sub_machine2_open;		//ÏÂÎ»»úÃüÁîĞÅºÅ
-//extern OS_EVENT * sub_machine2_close;		//ÏÂÎ»»úÃüÁîĞÅºÅ
 
 extern OS_EVENT *scan_slave;
 
@@ -225,10 +178,6 @@ void start_task(void *pdata)
 	 Heartbeat=OSSemCreate(0);
 	 RS485_MBOX=OSMboxCreate((void*)0);
 	 RS485_STUTAS_MBOX=OSMboxCreate((void*)0);
-//	 sub_machine1_close=OSSemCreate(0);	//´´½¨ĞÅºÅÁ¿
-//	 sub_machine1_open=OSSemCreate(0);	//´´½¨ĞÅºÅÁ¿
-//	 sub_machine2_close=OSSemCreate(0);	//´´½¨ĞÅºÅÁ¿
-//	 sub_machine2_open=OSSemCreate(0);	//´´½¨ĞÅºÅÁ¿
 	 scan_slave=OSSemCreate(0);
 	OSStatInit();					//³õÊ¼»¯Í³¼ÆÈÎÎñ.ÕâÀï»áÑÓÊ±1ÃëÖÓ×óÓÒ	
  	OS_ENTER_CRITICAL();			//½øÈëÁÙ½çÇø(ÎŞ·¨±»ÖĞ¶Ï´ò¶Ï)    			   
@@ -237,10 +186,6 @@ void start_task(void *pdata)
 	OSTaskCreate(myled_task,(void *)0,(OS_STK*)&MYLED_TASK_STK[MYLED_STK_SIZE-1],MYLED_TASK_PRIO);
 	OSTaskCreate(masterled_task,(void *)0,(OS_STK*)&MASTERLED_TASK_STK[MASTERLED_STK_SIZE-1],MASTERLED_TASK_PRIO);
 	OSTaskCreate(SETID_task,(void *)0,(OS_STK*)&SETID_TASK_STK[SETID_STK_SIZE-1],SETID_TASK_PRIO);
-//	OSTaskCreate(sub_machine1_open_task,(void *)0,(OS_STK*)&M1_OPEN_TASK_STK[M1_OPEN_STK_SIZE-1],M1_OPEN_TASK_PRIO);
-//	OSTaskCreate(sub_machine1_close_task,(void *)0,(OS_STK*)&M1_CLOSE_TASK_STK[M1_CLOSE_STK_SIZE-1],M1_CLOSE_TASK_PRIO);
-//	OSTaskCreate(sub_machine2_open_task,(void *)0,(OS_STK*)&M2_OPEN_TASK_STK[M2_OPEN_STK_SIZE-1],M2_OPEN_TASK_PRIO);
-//	OSTaskCreate(sub_machine2_close_task,(void *)0,(OS_STK*)&M2_CLOSE_TASK_STK[M2_CLOSE_STK_SIZE-1],M2_CLOSE_TASK_PRIO);
       OSTaskCreate(scanf_task,(void *)0,(OS_STK*)&SCAN_TASK_STK[SCAN_STK_SIZE-1],SCAN_TASK_PRIO);
  	OSTaskSuspend(START_TASK_PRIO);	//¹ÒÆğÆğÊ¼ÈÎÎñ.
 	OS_EXIT_CRITICAL();				//ÍË³öÁÙ½çÇø(¿ÉÒÔ±»ÖĞ¶Ï´ò¶Ï)
@@ -272,13 +217,13 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
 			  	   
 	 	}
 
-      if(led_lock==0){temperature();key_lcd();}
+     // if(led_lock==0){temperature();key_lcd();}
 	}
 	}
  /**************Ö÷»úÈÎÎñ**********************/
   void master_task(void *pdata)	  //Ö÷»úÈÎÎñ
   {	  OS_CPU_SR cpu_sr=0;
-      u8 go=0;
+      u8 go=6;
 	  u32 i;
 	  // u8 *msg,err;
 	  u8 try_cont=0;
@@ -451,11 +396,11 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
      	{
           	while(1)
 	{
-               delay_time(1);
+ //              delay_time(1);
 		   myled();
-		   led_on_off(ALL_NODE_LCD_LOCK,0); 
-			scanf_slave_machine();
-                    	for(i=1;i<=slave[0];i++){set_statuslist_1(slave[i],0,0,0);set_statuslist_2(slave[i],0,0,0);}//³õÊ¼»¯Á½¸ö×´Ì¬¶ÓÁ  
+	//	   led_on_off(ALL_NODE_LCD_LOCK,0); 
+	//		scanf_slave_machine();
+  //                  	for(i=1;i<=slave[0];i++){set_statuslist_1(slave[i],0,0,0);set_statuslist_2(slave[i],0,0,0);}//³õÊ¼»¯Á½¸ö×´Ì¬¶ÓÁ  
 
 
 
