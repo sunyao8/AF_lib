@@ -181,7 +181,7 @@ void start_task(void *pdata)
 	 scan_slave=OSSemCreate(0);
 	OSStatInit();					//≥ı ºªØÕ≥º∆»ŒŒÒ.’‚¿Ôª·—” ±1√Î÷”◊Û”“	
  	OS_ENTER_CRITICAL();			//Ω¯»Î¡ŸΩÁ«¯(Œﬁ∑®±ª÷–∂œ¥Ú∂œ)    			   
- 	OSTaskCreate(master_task,(void *)0,(OS_STK*)&MASTER_TASK_STK[MASTER_STK_SIZE-1],MASTER_TASK_PRIO);	 				   
+	OSTaskCreate(master_task,(void *)0,(OS_STK*)&MASTER_TASK_STK[MASTER_STK_SIZE-1],MASTER_TASK_PRIO);	 				   
 	OSTaskCreate(Receive_task,(void *)0,(OS_STK*)&Receive_TASK_STK[Receive_STK_SIZE-1],Receive_TASK_PRIO);
 	OSTaskCreate(myled_task,(void *)0,(OS_STK*)&MYLED_TASK_STK[MYLED_STK_SIZE-1],MYLED_TASK_PRIO);
 	OSTaskCreate(masterled_task,(void *)0,(OS_STK*)&MASTERLED_TASK_STK[MASTERLED_STK_SIZE-1],MASTERLED_TASK_PRIO);
@@ -264,151 +264,9 @@ void Receive_task(void *pdate)//¥”ª˙»ŒŒÒ
 
 		        }
 	   }
-		if(go==1)
-		{
-		{OSSemPost(Heartbeat);delay_ms(100);try_cont++;}  //∞——” ±∑‚◊∞≥…∫Ø ˝
-		   	if(try_cont==20)
-		  for(i=1;i<33;i++)
-		  {	//LED0=!LED0;  
-	       order_trans_rs485(mybox.myid,i,1,1,1);
-		   delay_us(20000);
-		  	order_trans_rs485(mybox.myid,i,1,2,1); 
-		   delay_us(20000);
-		   }
-		   if(try_cont==40)
-		   for(i=1;i<33;i++)
-		   {
-			// LED0=!LED0; 
-		   order_trans_rs485(mybox.myid,i,1,1,0);
-		  delay_us(20000);
-		   order_trans_rs485(mybox.myid,i,1,2,0);
-		    delay_us(50000);
-			try_cont=0;
-			}
-		}	
-		if(go==2)
-			   {
-                 myled(); 
-				                   
-                        	led_on_off(0,0);		 //πÿ±’¥”ª˙ledπ¶ƒ‹£¨∑¿÷πÕ®–≈øÿ÷∆–≈œ¢µƒ∂™ ß
-			   for(i=1;i<33;i++)		 // ’ºØ¥”ª˙◊¥Ã¨
-               { inquiry_slave_status(i);	
-	         }
-			   //œ¬√Ê «”√LCD∆¡≤‚ ‘ªÿ¿°–≈œ¢π¶ƒ‹
-				 for(i=1;i<33;i++)
-				   {
-				   LCD_ShowxNum(5+1*25,i*15,system_status_list_1[i].myid,3,16,0X80);
-				   LCD_ShowxNum(5+2*25,i*15,system_status_list_1[i].size,3,16,0X80);
-				   LCD_ShowxNum(5+3*25,i*15,system_status_list_1[i].work_status,3,16,0X80);	
-			       LCD_ShowxNum(5+4*25,i*15,system_status_list_1[i].work_time,3,16,0X80);
-				   LCD_ShowxNum(5+5*25,i*15,system_status_list_2[i].myid,3,16,0X80);
-				   LCD_ShowxNum(5+6*25,i*15,system_status_list_2[i].size,3,16,0X80);
-				   LCD_ShowxNum(5+7*25,i*15,system_status_list_2[i].work_status,3,16,0X80);	
-			       LCD_ShowxNum(5+8*25,i*15,system_status_list_2[i].work_time,3,16,0X80);
-				   }
-			 	
-				 for(i=1;i<33;i++)
-					{
-				   if(system_status_list_1[i].work_status==0){order_trans_rs485(mybox.myid,i,1,1,1);  delay_us(10000);}//—È÷§¥”ª˙9µƒøÿ÷∆∫Õπ§◊˜º∆ ±
-				   if(system_status_list_2[i].work_status==0){order_trans_rs485(mybox.myid,i,1,2,1);  delay_us(10000);}//				     
-				 	}
-                       
-				
-				     //¥Úø™¥”ª˙ledπ¶ƒ‹
-                        	led_on_off(1,0);
-		       }
-			 	if(go==3){// LED0=!LED0;
-				  order_trans_rs485(mybox.myid,2,2,0,0);
-				  delay_us(10000);
-				  }
-				
-				if(go==4){ 
-					s8 c=0,d=0;
-			dianya_zhi=400;//∑¿÷π±®æØ
-			tempshuzhi=30;
-                  //     myled() ; 
-                  
 			
-				   LCD_ShowxNum(5+1*25,10*15,slave[0],3,16,0X80);
-
-							 for(i=1;i<=slave[0];i++)
-					{
-			   if(system_status_list_1[slave[i]].work_status==0){led_on_off(NODE_LCD_LOCK_BASE,slave[i]);order_trans_rs485(mybox.myid,slave[i],Sub_Order,1,1);  delay_us(10000);try_cont++;}//—È÷§¥”ª˙9µƒøÿ÷∆∫Õπ§◊˜º∆ ±
-                                             					
-							 }
-							 
-											for(i=1;i<=slave[0];i++)
-										   if(system_status_list_2[slave[i]].work_status==0){led_on_off(NODE_LCD_LOCK_BASE,slave[i]);order_trans_rs485(mybox.myid,slave[i],Sub_Order,2,1);  delay_us(10000);try_cont++;}//				     
-
-           			led_on_off(BUSY_NODE_LCD_LCOK,0);		 //πÿ±’¥”ª˙ledπ¶ƒ‹£¨∑¿÷πÕ®–≈øÿ÷∆–≈œ¢µƒ∂™ ß                                      
-			   for(i=1;i<=slave[0];i++)		 // ’ºØ¥”ª˙◊¥Ã¨
-               { inquiry_slave_status(slave[i]);	
-	         }
-                             c=sort_busynode_list_asc(sort_busy_list_2,system_status_list_2);
-                             d=sort_busynode_list_asc(sort_busy_list_1, system_status_list_1);
-			   //œ¬√Ê «”√LCD∆¡≤‚ ‘ªÿ¿°–≈œ¢π¶ƒ‹
-				 for(i=1;i<=d;i++)
-				   {
-				   LCD_ShowxNum(5+1*25,i*15,sort_busy_list_1[i].myid,3,16,0X80);
-				   LCD_ShowxNum(5+2*25,i*15,sort_busy_list_1[i].size,3,16,0X80);
-				   LCD_ShowxNum(5+3*25,i*15,sort_busy_list_1[i].work_time,3,16,0X80);	
-  
-					}
-					for(i=1;i<=c;i++)
-					{
-				   LCD_ShowxNum(5+6*25,i*15,sort_busy_list_2[i].myid,3,16,0X80);
-				   LCD_ShowxNum(5+7*25,i*15,sort_busy_list_2[i].size,3,16,0X80);
-				   LCD_ShowxNum(5+8*25,i*15,sort_busy_list_2[i].work_time,3,16,0X80);	
-			       
-						}
-                        	
-		 
-
-					}
-
-		if(go==5)
-			{
-
-                                                      s8 d=0,c=0;
-								  led_on_off(1,0);
-						   for(i=1;i<33;i++)		 // ’ºØ¥”ª˙◊¥Ã¨
-               { inquiry_slave_status(i);	
-	         }			  
-					
-		c=sort_idlenode_list(sort_idle_list_1, system_status_list_1);
-		 d=sort_idlenode_list(sort_idle_list_2,system_status_list_2);			 
-
-				    for(i=1;i<=d;i++)
-				   {
-                                  LCD_ShowxNum(5+1*25,i*15,sort_idle_list_2[i].myid,3,16,0X80);
-				   LCD_ShowxNum(5+2*25,i*15,sort_idle_list_2[i].size,3,16,0X80);
-
-				   }
-				for(i=1;i<=c;i++)
-					{                        LCD_ShowxNum(5+6*25,i*15,sort_idle_list_1[i].myid,3,16,0X80);
-				   LCD_ShowxNum(5+7*25,i*15,sort_idle_list_1[i].size,3,16,0X80);
-
-					}
-				 led_on_off(1,0);	
-		}
-
-     if(go==6)
-     	{
-          	while(1)
-	{
- //              delay_time(1);
-		   myled();
-	//	   led_on_off(ALL_NODE_LCD_LOCK,0); 
-	//		scanf_slave_machine();
-  //                  	for(i=1;i<=slave[0];i++){set_statuslist_1(slave[i],0,0,0);set_statuslist_2(slave[i],0,0,0);}//≥ı ºªØ¡Ω∏ˆ◊¥Ã¨∂”¡  
-
-
-
-	  
-	 
-	}	 
-
-	 }
+			   
+			     	
 
 	}
 		                                      //∆Ù∂ØΩ” ’≥Ã
@@ -541,7 +399,6 @@ int slave_control(u8 i,u8 j)//∏¯œ¬œ¬Œªª˙∑≈÷∏¡Ó
    	}
 if(mybox.send==2)//≤Èø¥¥”ª˙◊¥Ã¨
  {
- //	LED1=!LED1;
   status_trans_rs485(&mystatus);
  led_lock=0;//≤Ÿ◊˜ÕÍ≥…ø™À¯
 return 2;

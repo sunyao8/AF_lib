@@ -28,6 +28,8 @@
 }box;
 #define LEN_control 15
 #define LEN_status 10
+#define CPT_LL                                                    '^'
+#define CONTROL                                                '/'
 
 //#define RS485_TX_EN		PGout(9)	//485模式控制.0,接收;1,发送.开发板用
 #define RS485_TX_EN		PBout(15)	//485模式控制.0,接收;1,发送.本工程用
@@ -124,7 +126,7 @@ typedef struct
 void turn_master_id(u8);
 void initmybox(void);
 void TIM4_Int_Init(u16,u16);
-void order_trans_rs485(u8,u8,u8,u8,u8);
+void order_trans_rs485(u8,u8,u8,u8,u8,u8);
 int rs485_trans_order(u8 *);
 void rs485_trans_status(u8 *);
 void status_trans_rs485(status_box *);

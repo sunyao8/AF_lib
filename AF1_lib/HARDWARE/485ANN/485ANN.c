@@ -9,6 +9,9 @@
 #include "stm32_dsp.h"
 
 /***********************************************************************/
+#define CPT_LL                                                    '^'
+#define CONTROL                                                '/'
+
 u16 RS485_RX_BUF[64]; 		//接收缓冲,最大64个字节
 //接收到的数据长度
 u8 RS485_RX_CNT=0;  
@@ -248,7 +251,7 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 	{ 
 	  flag=cont;
       if(id==(flag)){
-	delay_time(2);
+	//delay_time(2);
          mybox.master=1;
 	    OSTaskResume(MASTER_TASK_PRIO);
 		cont=1;
@@ -264,12 +267,24 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 
 
  int rs485_trans_order(u8 *tx_r485)//解析由主机发送过来的信号，并发送给下位机
-{ 
-  dianya_zhi=comp_16(tx_r485[6],tx_r485[7]);
-  dianliuzhi=comp_16(tx_r485[8],tx_r485[9]);
-  wugongkvar=comp_16(tx_r485[10],tx_r485[11]);
-  //tempshuzhi=tx_r485[12];
-  gonglvshishu=tx_r485[12];
+{
+ 	         
+ 
+if(tx_r485[8]==CPT_LL)
+{
+    dianya_zhi=comp_16(tx_r485[1],tx_r485[2]);
+  dianliuzhi=comp_16(tx_r485[3],tx_r485[4]);
+  wugongkvar=comp_16(tx_r485[5],tx_r485[6]);
+  gonglvshishu=tx_r485[7];
+return 0;
+
+}
+
+
+
+if(tx_r485[8]==CONTROL)
+
+{
    if(mybox.myid==tx_r485[2])//判断是否是发给本机的信息或是广播信息
    	{
    	 mybox.source=tx_r485[1];
@@ -278,12 +293,19 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
      mybox.message=tx_r485[5];
      return 1;
    	}
-   else return 0;
+   
 }
 
- void order_trans_rs485(u8 source,u8 destination, u8 send,u8 relay,u8 message)//主机程序，主机命令解析成RS485信息，发送给目的从机
+return 0;
+
+}
+
+ void order_trans_rs485(u8 source,u8 destination, u8 send,u8 relay,u8 message,u8 ctr)//主机程序，主机命令解析成RS485信息，发送给目的从机
 {   OS_CPU_SR cpu_sr=0;
    OS_ENTER_CRITICAL();
+    
+   {  
+  if(ctr==CONTROL)
     {
       rs485buf[0]='&';//协议头
 	rs485buf[1]=source;
@@ -291,19 +313,34 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
 	rs485buf[3]=send;
 	rs485buf[4]=relay;
 	rs485buf[5]=message;
-	rs485buf[6]=(dianya_zhi & (uint16_t)0x00FF);
-	rs485buf[7]=((dianya_zhi & (uint16_t)0xFF00)>>8);
-	rs485buf[8]=(dianliuzhi& (uint16_t)0x00FF);
-	rs485buf[9]=((dianliuzhi& (uint16_t)0xFF00)>>8);
-	rs485buf[10]=(wugongkvar& (uint16_t)0x00FF);
-	rs485buf[11]=((wugongkvar& (uint16_t)0xFF00)>>8);
-	//rs485buf[12]=tempshuzhi;
-	rs485buf[12]=gonglvshishu;
-	rs485buf[13]='*';//协议尾
-	RS485_Send_Data(rs485buf,14);//发送5个字节
+	rs485buf[6]=0;
+	rs485buf[7]=gonglvshishu;	
+	rs485buf[8]=ctr;
+	rs485buf[9]='*';//协议尾
+	RS485_Send_Data(rs485buf,10);//发送5个字节
 	   	if(destination==source){mybox.send=send;slave_control(relay, message);}//如果信息发给的自己
 
+  }
+	
+if(ctr==CPT_LL )
+
+		{
+      rs485buf[0]='&';//协议头	
+	rs485buf[1]=(dianya_zhi & (uint16_t)0x00FF);
+	rs485buf[2]=((dianya_zhi & (uint16_t)0xFF00)>>8);
+	rs485buf[3]=(dianliuzhi& (uint16_t)0x00FF);
+	rs485buf[4]=((dianliuzhi& (uint16_t)0xFF00)>>8);
+	rs485buf[5]=(wugongkvar& (uint16_t)0x00FF);
+	rs485buf[6]=((wugongkvar& (uint16_t)0xFF00)>>8);
+	rs485buf[7]=gonglvshishu;	
+	rs485buf[8]=ctr;	
+	rs485buf[9]='*';//协议尾
+	RS485_Send_Data(rs485buf,10);//发送5个字节
+	  // 	if(destination==source){mybox.send=send;slave_control(relay, message);}//如果信息发给的自己
+
     	}
+//#endif
+}
 	OS_EXIT_CRITICAL();	
 }
 
@@ -318,7 +355,7 @@ void heartbeat(u8 t)
 {	u8 i;
 for(i=0;i<=t;i++)
 		{	
-	       order_trans_rs485(mybox.myid,0,0,0,0);
+	       order_trans_rs485(mybox.myid,0,0,0,0,CPT_LL);
 		    delay_us(10000);
 		  // LCD_ShowxNum(60+i*32,190,0,7,16,0X80);
 		}	
@@ -335,85 +372,6 @@ for(i=0;i<=t;i++)
 
 void led_on_off(u8 on_off,u8 j) //参数值1 为打开led ，0为关闭led
 {
-u8 i,g=0;
-if(on_off==ALL_NODE_LCD_UNLOCK)
-    {
-        for(i=1;i<10;i++)//65
-	   { order_trans_rs485(mybox.myid,0,ALL_NODE_LCD_UNLOCK,0,0);
-       // gonglvyinshu();//计算功率，电压电流与显示按键分开
-      // temperature();
-      //  key_lcd();
-          if(g==4) {gonglvyinshu();key_idset();g=0;}
-            g++;
-
-         
-          }	 
-    }
-if(on_off==ALL_NODE_LCD_LOCK)
-    {
-        for(i=1;i<20;i++) //65
-	   { order_trans_rs485(mybox.myid,0,ALL_NODE_LCD_LOCK,0,0);
-           gonglvyinshu();//计算功率，电压电流与显示按键分开
-temperature();
-key_lcd();
-    //      if(g==4) {gonglvyinshu();key_idset();g=0;}
-     //        g++;
-
-          }	 
-    }
-
-if(on_off==IDLE_NODE_LCD_LOCK)
-    {
-        for(i=1;i<65;i++) //65
-	   { order_trans_rs485(mybox.myid,0,IDLE_NODE_LCD_LOCK,0,0);
-         //  gonglvyinshu();//计算功率，电压电流与显示按键分开
-//temperature();
-//key_lcd();
-       
-          }	 
-    }
-
-
-if(on_off==BUSY_NODE_LCD_LCOK)
-    {
-        for(i=1;i<65;i++) //65
-	   { order_trans_rs485(mybox.myid,0,BUSY_NODE_LCD_LCOK,0,0);
-  //          gonglvyinshu();//计算功率，电压电流与显示按键分开
-//temperature();
-//key_lcd();
-    //      if(g==4) {gonglvyinshu();key_idset();g=0;}
-      //       g++;
-//	delay_us(100);
-
-
-          }
-		
-    }
-
-if(on_off==NODE_LCD_LOCK_BASE)
-    {
-        for(i=1;i<65;i++) //65
-	   { order_trans_rs485(mybox.myid,0,NODE_LCD_LOCK_BASE+j,0,0);
-   //         gonglvyinshu();//计算功率，电压电流与显示按键分开
-     //   temperature();
-    //     key_lcd();
-       
-//	delay_us(100);
-
-
-          }	 
-    }
-
-if(on_off==NODE_LCD_LOCK_OLDFUN)
-    {
-        for(i=1;i<65;i++) //65
-	   { order_trans_rs485(mybox.myid,0,ALL_NODE_LCD_LOCK,0,0);
-            //  delay_us(100);
-          }
-		
-    }
-
-
 }
 
 
@@ -539,7 +497,7 @@ for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
 			                   {                   
                                            led_on_off(NODE_LCD_LOCK_BASE,sort_idle_list_1[j].myid);//1000ms
 				//	order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,Sub_Order,1,1);
-			order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,1,1,1);
+			order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,1,1,1,CONTROL);
 
 						///		idle_done_nodelist_1[sort_idle_list_1[j].myid]=1;   ///
 										 
@@ -579,7 +537,7 @@ for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
                           	                {     
                                         led_on_off(NODE_LCD_LOCK_BASE,sort_idle_list_2[j].myid);
 					//	  order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,Sub_Order,2,1);///
-					order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,1,2,1);
+					order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,1,2,1,CONTROL);
                                                 idle_done_nodelist_2[sort_idle_list_2[j].myid]=1;
 										
                           	                }
@@ -621,8 +579,8 @@ if(turn_label_idle!=0)
 				for(j=1;j<=turn_label_idle;j++)
                 	{  
                        if(sort_busy_list_1[i].size==turn_idle_list[j].size)
-                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1);delay_us(10000);
-                             order_trans_rs485(mybox.myid,sort_busy_list_1[i].myid,1,1,0);
+                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1,CONTROL);delay_us(10000);
+                             order_trans_rs485(mybox.myid,sort_busy_list_1[i].myid,1,1,0,CONTROL);
 						 	{ k=sort_busy_list_1[i].myid;
                                                     t=sort_busy_list_1[i].size;
                                                      //  sort_busy_list_1[i].work_time=0;
@@ -649,8 +607,8 @@ if(turn_label_idle!=0)
 				for(j=1;j<=turn_label_idle;j++)
                 	{  
                        if(sort_busy_list_2[i].size==turn_idle_list[j].size)
-                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1);delay_us(10000);
-                             order_trans_rs485(mybox.myid,sort_busy_list_2[i].myid,1,2,0);delay_us(10000);
+                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1,CONTROL);delay_us(10000);
+                             order_trans_rs485(mybox.myid,sort_busy_list_2[i].myid,1,2,0,CONTROL);delay_us(10000);
 						 	{ k=sort_busy_list_2[i].myid;
                                                     t=sort_busy_list_2[i].size;
                                                      //  sort_busy_list_2[i].work_time=0;
@@ -698,7 +656,7 @@ for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
 						if((wugong_computer-wugong_95)>sort_busy_list_1[label_busy1].size)
 				   {
                              led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[label_busy1].myid);                                         											
-				   order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0);
+				   order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0,CONTROL);
 				  // delay_ms(3500);
 				   label_busy1--;
                               
@@ -708,7 +666,7 @@ for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
 						if((wugong_computer-wugong_95)<=sort_busy_list_1[j].size)
 				   {
 	                             led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[j].myid);                                         														   
-				   order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0);
+				   order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0,CONTROL);
 				 // delay_ms(3500);
                               j++;
 				}
@@ -727,7 +685,7 @@ if(gonglvshishu>95)
                                 	if((wugong_computer-wugong_95)>sort_busy_list_2[label_busy2].size)
 				   {
 				          led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[label_busy2].myid);                                         											
-				   order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0);
+				   order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0,CONTROL);
 				 // delay_ms(3500);
 				   label_busy2--;
                                                          
@@ -736,7 +694,7 @@ if(gonglvshishu>95)
 			   if((wugong_computer-wugong_95)<=sort_busy_list_2[j].size)
 		   	       {
 				          led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[j].myid);                                         											
-				   order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0);
+				   order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0,CONTROL);
 				  // delay_ms(3500);
 				   j++;
 			   }
@@ -770,7 +728,7 @@ for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
                             				if((wugong_computer)>sort_busy_list_1[label_busy1].size)
 				                            { 									
 								  led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[label_busy1].myid);
-								order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0);
+								order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0,CONTROL);
 				                           //   delay_ms(3500);
 				                                label_busy1--;
 				                             }
@@ -778,7 +736,7 @@ for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
                                                             if((wugong_computer)<=sort_busy_list_1[j].size)
 			                                     { 
 			                                     led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[j].myid);
-                          			                  order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0);
+                          			                  order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0,CONTROL);
 					                      //    delay_ms(3500);
 											  j++;
 	                                                    }
@@ -797,7 +755,7 @@ if(L_C_flag==0)
                                                             if((wugong_computer)>sort_busy_list_2[label_busy2].size)
 				   {
 			                                     led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[label_busy2].myid);                                                          								
-				   order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0);
+				   order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0,CONTROL);
 				//  delay_ms(3500);
 				   label_busy2--;
 
@@ -806,7 +764,7 @@ if(L_C_flag==0)
 			 if((wugong_computer)<=sort_busy_list_2[j].size)
 			{
                      led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[j].myid);                                      														   
-			order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0);
+			order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0,CONTROL);
 			//delay_ms(3500);	
 			j++;
 
@@ -1188,7 +1146,7 @@ u8 inquiry_slave_status(u8 id)
 	   return 1;
 		}
 
-   order_trans_rs485(mybox.myid,id,2,0,0);
+   order_trans_rs485(mybox.myid,id,2,0,0,CONTROL);
   // delay_us(10000);
    msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
    if(err==OS_ERR_TIMEOUT){set_statuslist_1(id,0,2,0);set_statuslist_2(id,0,2,0);return 0;}//(u8 id, u8 size, u8 work_status, u8 work_time) 
@@ -1411,6 +1369,7 @@ delay_ms(50);//没有延时，屏会死机
 
 void Alarm(void)
 {
+/*
 	   if((tempshuzhi>=70||dianya_zhi>=440||dianya_zhi<=340)&&alarm_lock==0)
 	   	{   
                                         if(mybox.master==1)//主机发布通知延时信息
@@ -1443,6 +1402,7 @@ void Alarm(void)
 		      
 死机勿用
 */
+/*
 		  if(tempshuzhi<70&&dianya_zhi<440&&dianya_zhi>340&&alarm_lock==1)
 	         {
 
@@ -1456,7 +1416,7 @@ void Alarm(void)
 	 	}
 
 	
-	 
+*/	 
 
 }
 	 
@@ -1480,274 +1440,9 @@ for(i=1;i<33;i++)
       slave[0]=count-1;
 	  
 }
-/*
-u8 sub_delaytime_15(u8 i)
-{
-if(i==0)
-{return 0;}
-
-if(i<=32)
-{            
-                     if((i)<=4)
-               { delay_ms(i*15000);}
-			 if((i)>4&&(i)<=8)
-			                     {  delay_ms(4*15000);
-			 	                delay_ms(((i-4)*15000));
-			 	               }		
-               			 if(i>8&&i<=12)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-			 	                delay_ms(((i-8)*15000));
-			 	               }		
-			                 if(i>12&&i<=16)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-							delay_ms(4*15000);
-			 	                delay_ms(((i-12)*15000));
-			 	               }		
-                                   if(i>16&&i<=20)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-			 	                delay_ms(((i-16)*15000));
-      			 	               }		
-                                      if(i>20&&i<=24)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						     delay_ms(4*15000);
-			 	                delay_ms(((i-20)*15000));
-			 	               }		
- 
-                                      if(i>24&&i<=28)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						     delay_ms(4*15000);
-							 delay_ms(4*15000);
-			 	                delay_ms(((i-24)*15000));
-			 	               }		
- 
-                                      if(i>28&&i<=32)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						     delay_ms(4*15000);
-							 delay_ms(4*15000);
-							 delay_ms(4*15000);
-			 	                delay_ms(((i-28)*15000));
-			 	               }		                             
 
 
-}
-if(i>32)
-{
-delay_ms(4*15000);
-delay_ms(4*15000);
-delay_ms(4*15000);
-delay_ms(4*15000);
-delay_ms(4*15000);
-delay_ms(4*15000);
-delay_ms(4*15000);
-delay_ms(4*15000);
-i=i-32;
-                     if((i)<=4)
-               { delay_ms(i*15000);}
-			 if((i)>4&&(i)<=8)
-			                     {  delay_ms(4*15000);
-			 	                delay_ms(((i-4)*15000));
-			 	               }		
-               			 if(i>8&&i<=12)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-			 	                delay_ms(((i-8)*15000));
-			 	               }		
-			                 if(i>12&&i<=16)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-							delay_ms(4*15000);
-			 	                delay_ms(((i-12)*15000));
-			 	               }		
-                                   if(i>16&&i<=20)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-			 	                delay_ms(((i-16)*15000));
-      			 	               }		
-                                      if(i>20&&i<=24)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						     delay_ms(4*15000);
-			 	                delay_ms(((i-20)*15000));
-			 	               }		
- 
-                                      if(i>24&&i<=28)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						     delay_ms(4*15000);
-							 delay_ms(4*15000);
-			 	                delay_ms(((i-24)*15000));
-			 	               }		
- 
-                                      if(i>28&&i<=32)
-			                     {  delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						    delay_ms(4*15000);
-						     delay_ms(4*15000);
-							 delay_ms(4*15000);
-							 delay_ms(4*15000);
-			 	                delay_ms(((i-28)*15000));
-			 	               }		                             
 
 
-}
-
-return 0;
-}
-
-u8 sub_delaytime_5(u8 i)
-{
-if(i==0)
-{return 0;}
 
 
-if(i<=32)
-{
-                     if((i)<=4)
-               { delay_ms(i*5000);}
-			 if((i)>4&&(i)<=8)
-			                     {  delay_ms(4*5000);
-			 	                delay_ms(((i-4)*5000));
-			 	               }		
-               			 if(i>8&&i<=12)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-			 	                delay_ms(((i-8)*5000));
-			 	               }		
-			                 if(i>12&&i<=16)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-							delay_ms(4*5000);
-			 	                delay_ms(((i-12)*5000));
-			 	               }		
-                                   if(i>16&&i<=20)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-			 	                delay_ms(((i-16)*5000));
-      			 	               }		
-                                      if(i>20&&i<=24)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						     delay_ms(4*5000);
-			 	                delay_ms(((i-20)*5000));
-			 	               }		
- 
-                                      if(i>24&&i<=28)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						     delay_ms(4*5000);
-							 delay_ms(4*5000);
-			 	                delay_ms(((i-24)*5000));
-			 	               }		
- 
-                                      if(i>28&&i<=32)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						     delay_ms(4*5000);
-							 delay_ms(4*5000);
-							 delay_ms(4*5000);
-			 	                delay_ms(((i-28)*5000));
-			 	               }		                             
-
-
-}
-if(i>32)
-{
-delay_ms(4*5000);
-delay_ms(4*5000);
-delay_ms(4*5000);
-delay_ms(4*5000);
-delay_ms(4*5000);
-delay_ms(4*5000);
-delay_ms(4*5000);
-delay_ms(4*5000);
-i=i-32;
-                     if((i)<=4)
-               { delay_ms(i*5000);}
-			 if((i)>4&&(i)<=8)
-			                     {  delay_ms(4*5000);
-			 	                delay_ms(((i-4)*5000));
-			 	               }		
-               			 if(i>8&&i<=12)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-			 	                delay_ms(((i-8)*5000));
-			 	               }		
-			                 if(i>12&&i<=16)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-							delay_ms(4*5000);
-			 	                delay_ms(((i-12)*5000));
-			 	               }		
-                                   if(i>16&&i<=20)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-			 	                delay_ms(((i-16)*5000));
-      			 	               }		
-                                      if(i>20&&i<=24)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						     delay_ms(4*5000);
-			 	                delay_ms(((i-20)*5000));
-			 	               }		
- 
-                                      if(i>24&&i<=28)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						     delay_ms(4*5000);
-							 delay_ms(4*5000);
-			 	                delay_ms(((i-24)*5000));
-			 	               }		
- 
-                                      if(i>28&&i<=32)
-			                     {  delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						    delay_ms(4*5000);
-						     delay_ms(4*5000);
-							delay_ms(4*5000);
-							delay_ms(4*5000);
-			 	                delay_ms(((i-28)*5000));
-			 	               }		                             
-
-
-}
-
-	return 0;
-}
-
-*/
