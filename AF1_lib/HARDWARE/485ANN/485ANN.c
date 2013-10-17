@@ -270,7 +270,7 @@ void turn_master_id(u8 id)//改变当前整个系统中主机的ID号
   wugongkvar=comp_16(tx_r485[10],tx_r485[11]);
   //tempshuzhi=tx_r485[12];
   gonglvshishu=tx_r485[12];
-   if(mybox.myid==tx_r485[2]||tx_r485[2]==0)//判断是否是发给本机的信息或是广播信息
+   if(mybox.myid==tx_r485[2])//判断是否是发给本机的信息或是广播信息
    	{
    	 mybox.source=tx_r485[1];
    	 mybox.send=tx_r485[3];

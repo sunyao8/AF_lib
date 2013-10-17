@@ -137,8 +137,8 @@ int slave_control(u8,u8);
 
 //#define ID  1
 
-#define SIZE_1 1
-#define SIZE_2 1
+#define SIZE_1 10
+#define SIZE_2 10
 #define WORK_STATUS_1	 0//0为没有工作  1为工作  2为坏掉，初始化为0
 #define WORK_STATUS_2    0 
 #define WORK_TIME_1 0
@@ -161,7 +161,7 @@ int main(void)
 /************************************/
 ///	uart_init(9600);LCD_Init();	                                                              //调试显示
 	RS485_Init(9600);	//初始化RS485
-	TIM4_Int_Init(9999,7199);//10Khz的计数频率，计数10K次为1000ms 
+	TIM4_Int_Init(9999*2,7199);//10Khz的计数频率，计数10K次为1000ms 
 	 initmybox();
 	 init_mystatus(SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
 	 
@@ -209,10 +209,10 @@ void Receive_task(void *pdate)//从机任务
 		        }
 	 msg=(u8 *)OSMboxPend(RS485_MBOX,0,&err);//接收到有数据
 	 flag1=rs485_trans_order(msg);
-	 dog_clock=10;
+	 dog_clock=20;
 	 if(flag1==1)/***是本机信息***/
 	 	{		//LED1=!LED1;	  
-		       dog_clock=10;
+		       dog_clock=20;
 	 	      slave_control(mybox.relay,mybox.message);
 			  	   
 	 	}
@@ -223,7 +223,7 @@ void Receive_task(void *pdate)//从机任务
  /**************主机任务**********************/
   void master_task(void *pdata)	  //主机任务
   {	  OS_CPU_SR cpu_sr=0;
-      u8 go=6;
+      u8 go=0;
 	  u32 i;
 	  // u8 *msg,err;
 	  u8 try_cont=0;
@@ -433,7 +433,7 @@ if(mybox.master==1)OSTaskSuspend( MYLED_TASK_PRIO);
  key_idset();//按键与显示功能
   LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//刷指示灯，如果显示器有旁路电容滤波 可以删除
         }
-delay_ms(50);
+//delay_ms(50);
 }
 }
 
