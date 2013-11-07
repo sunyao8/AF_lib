@@ -158,6 +158,9 @@ void Alarm(void);
 void key_lcd(void);
 void LIGHT(u8,u8);
 void scanf_slave_machine(void);
+ void status_trans_rs485_dis(status_box *mystatus);//从机程序
+ void status_trans_rs485_RT(status_box *mystatus);//从机程序
+
 //u8 sub_delaytime_15(u8);
 //u8 sub_delaytime_5(u8 );
 

@@ -210,6 +210,7 @@ void Receive_task(void *pdate)//从机任务
 	 msg=(u8 *)OSMboxPend(RS485_MBOX,0,&err);//接收到有数据
 	 flag1=rs485_trans_order(msg);
 	 dog_clock=20;
+mybox.myid=AT24CXX_ReadOneByte(0x0010);
 	 if(flag1==1)/***是本机信息***/
 	 	{		//LED1=!LED1;	  
 		       dog_clock=20;
@@ -244,6 +245,7 @@ void Receive_task(void *pdate)//从机任务
 	   if(go==0)
 	  { myled(); 
 	   delay_time(1);
+	   mybox.myid=AT24CXX_ReadOneByte(0x0010);
 		 if(((gonglvshishu)<90)&&(L_C_flag==1))
 		 	{
               offset_idlepower();
@@ -403,6 +405,47 @@ if(mybox.send==2)//查看从机状态
  led_lock=0;//操作完成开锁
 return 2;
  }
+if(mybox.send==3)//查看从机状态
+{
+  status_trans_rs485_dis(&mystatus);
+ led_lock=0;//操作完成开锁
+return 2;
+ }
+if(mybox.send==4)//初始投变比时使用，保证能投出去，带反馈机制
+{
+{ 	 // LED1=!LED1;
+ if(i==1&&j==1)
+ {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  led_lock=0; //操作完成开锁
+ }
+ if(i==1&&j==0)
+ 	{GPIO_SetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  led_lock=0; //操作完成开锁
+ }
+ if(i==2&&j==1)
+ 	{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  led_lock=0; //操作完成开锁
+
+ }
+ if(i==2&&j==0)
+ 	{GPIO_SetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  led_lock=0; //操作完成开锁
+
+ }
+   	}
+ status_trans_rs485_RT(&mystatus);//从机程序
+ led_lock=0;//操作完成开锁
+return 2;
+ }
+
  if(mybox.send==ALL_NODE_LCD_UNLOCK) //打开刷新led屏幕
  {
  led_lock=0;

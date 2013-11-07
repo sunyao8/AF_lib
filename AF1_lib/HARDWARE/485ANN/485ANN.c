@@ -422,6 +422,33 @@ mystatus.work_time[1]=work_time_2;
 	OS_EXIT_CRITICAL();	
 }
 
+ void status_trans_rs485_dis(status_box *mystatus)//从机程序
+{  	 OS_CPU_SR cpu_sr=0;
+    OS_ENTER_CRITICAL();
+    statusbuf[0]='&';
+	statusbuf[1]='#';
+	statusbuf[2]=mystatus->myid;
+	statusbuf[3]=mystatus->size[0];
+	statusbuf[4]=mystatus->size[1];
+	statusbuf[5]=mystatus->work_status[0];
+	statusbuf[6]=mystatus->work_status[1];
+
+	statusbuf[7]='*';
+	RS485_Send_Data(statusbuf,8);//发送10个字节
+	OS_EXIT_CRITICAL();	
+}
+
+ void status_trans_rs485_RT(status_box *mystatus)//从机程序
+{  	 OS_CPU_SR cpu_sr=0;
+    OS_ENTER_CRITICAL();
+    statusbuf[0]='&';
+	statusbuf[1]='#';
+
+	statusbuf[2]='*';
+	RS485_Send_Data(statusbuf,3);//发送10个字节
+	OS_EXIT_CRITICAL();	
+}
+
 
  void rs485_trans_status(u8 *tx_r485)//主机程序，主机命令解析成RS485信息，发送给目的从机
  	{
