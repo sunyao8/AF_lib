@@ -438,11 +438,11 @@ mystatus.work_time[1]=work_time_2;
 	OS_EXIT_CRITICAL();	
 }
 
- void status_trans_rs485_RT(status_box *mystatus)//从机程序
+ void status_trans_rs485_RT()//从机程序
 {  	 OS_CPU_SR cpu_sr=0;
     OS_ENTER_CRITICAL();
     statusbuf[0]='&';
-	statusbuf[1]='#';
+	statusbuf[1]='+';
 
 	statusbuf[2]='*';
 	RS485_Send_Data(statusbuf,3);//发送10个字节

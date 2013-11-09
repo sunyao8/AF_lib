@@ -441,7 +441,7 @@ if(mybox.send==4)//初始投变比时使用，保证能投出去，带反馈机制
 
  }
    	}
- status_trans_rs485_RT(&mystatus);//从机程序
+ status_trans_rs485_RT();//从机程序
  led_lock=0;//操作完成开锁
 return 2;
  }
