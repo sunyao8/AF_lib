@@ -132,8 +132,9 @@ extern u8 true_worktime1_flag,true_worktime2_flag;
 
 u8 led_lock=0;
 u8 init=1;
-
+u8 auto_on=1;
 int slave_control(u8,u8);
+void EXTI_Configuration(void);//初始化函数
 
 //#define ID  1
 
@@ -164,7 +165,8 @@ int main(void)
 	TIM4_Int_Init(9999*2,7199);//10Khz的计数频率，计数10K次为1000ms 
 	 initmybox();
 	 init_mystatus(SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
-	 
+EXTI_Configuration();//初始化函数
+
 	OSInit();  	 			//初始化UCOSII
 			  
  	OSTaskCreate(start_task,(void *)0,(OS_STK *)&START_TASK_STK[START_STK_SIZE-1],START_TASK_PRIO );//创建起始任务
@@ -369,7 +371,7 @@ int slave_control(u8 i,u8 j)//给下下位机放指令
 	   //LED1=!LED1;
 	return 0;
     }
-   if(mybox.send==1) //下位机控制
+   if(mybox.send==1&&auto_on==1) //下位机控制
    	{ 	 // LED1=!LED1;
  if(i==1&&j==1)
  {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
@@ -411,7 +413,7 @@ if(mybox.send==3)//查看从机状态
  led_lock=0;//操作完成开锁
 return 2;
  }
-if(mybox.send==4)//初始投变比时使用，保证能投出去，带反馈机制
+if(mybox.send==4&&auto_on==1)//初始投变比时使用，保证能投出去，带反馈机制
 {
 { 	 // LED1=!LED1;
  if(i==1&&j==1)
@@ -595,3 +597,88 @@ while(1)
 
 }
 }
+
+
+void EXTI_Configuration(void)//初始化函数
+
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+	EXTI_InitTypeDef EXTI_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	
+	//打开时钟
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA , ENABLE );	  //使能ADC1通道时钟
+
+		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;		
+	GPIO_Init(GPIOA, &GPIO_InitStructure);	
+	 		
+	//使能外部中断复用时钟
+	
+	//映射GPIOE的Pin0至EXTILine0
+GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource12);
+
+
+
+EXTI_InitStructure.EXTI_Line = EXTI_Line12;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;  
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  EXTI_Init(&EXTI_InitStructure);
+	
+	//NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);         	//嵌套分组为组0
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI15_10_IRQn;      	//中断通道为通道10
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;   //抢断优先级为0
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority =1;    		//响应优先级为0
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;     		//开中断
+	NVIC_Init(&NVIC_InitStructure);
+	 EXTI_GenerateSWInterrupt(EXTI_Line12);
+
+}
+void EXTI15_10_IRQHandler(void)
+{
+static u8 first_sen=1;
+
+	OSIntEnter();   
+
+  if(EXTI_GetITStatus(EXTI_Line12) != RESET)
+	
+	{
+
+if(KEY1==1&&auto_on==0)
+ 	{
+		  auto_on=1;
+	GPIO_SetBits(GPIOA,GPIO_Pin_0);
+GPIO_SetBits(GPIOA,GPIO_Pin_8);
+mystatus.work_status[0]=0;
+mystatus.work_status[1]=0;
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+ }
+
+if(KEY1==0&&auto_on==1&&first_sen==1)	
+ {
+ 		first_sen=2;
+ auto_on=0;
+GPIO_ResetBits(GPIOA,GPIO_Pin_0);
+mystatus.work_status[0]=1;
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+ }
+if(KEY1==0&&auto_on==1&&first_sen==2)
+ 	{
+ 	first_sen=1;		
+ 	auto_on=0;
+GPIO_ResetBits(GPIOA,GPIO_Pin_8);
+mystatus.work_status[1]=1;
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+
+ }
+
+
+	}
+      EXTI_ClearITPendingBit(EXTI_Line12);
+
+	   	OSIntExit();  
+
+}
+

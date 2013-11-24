@@ -12,7 +12,7 @@
 #include "adc.h"
 #include "timer.h"								  
 #include "Ht1621.h"
-	  		  	
+#include "stm32f10x_exti.h"
  
  typedef struct  
 { 

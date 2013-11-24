@@ -285,7 +285,7 @@ return 0;
 if(tx_r485[8]==CONTROL)
 
 {
-   if(mybox.myid==tx_r485[2])//判断是否是发给本机的信息或是广播信息
+   if(mybox.myid==tx_r485[2]||tx_r485[2]==0)//判断是否是发给本机的信息或是广播信息
    	{
    	 mybox.source=tx_r485[1];
    	 mybox.send=tx_r485[3];
