@@ -230,8 +230,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>577</TopLine>
-      <CurrentLine>606</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\main.c</PathWithFileName>
       <FilenameWithoutPath>main.c</FilenameWithoutPath>
@@ -1035,7 +1035,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>69</TopLine>
+      <TopLine>75</TopLine>
       <CurrentLine>96</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\STM32F10x_DSP_Lib\src\iir_stm32.c</PathWithFileName>

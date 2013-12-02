@@ -407,7 +407,7 @@ if(mybox.send==2)//查看从机状态
  led_lock=0;//操作完成开锁
 return 2;
  }
-if(mybox.send==3)//查看从机状态
+if(mybox.send==3&&auto_on==1)//查看从机状态
 {
   status_trans_rs485_dis(&mystatus);
  led_lock=0;//操作完成开锁
