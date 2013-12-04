@@ -46,7 +46,7 @@ OS_STK Receive_TASK_STK[Receive_STK_SIZE];
 void  Receive_task(void *pdata);
 ////////////////////////////////////////////////////////////////////////
 
-#define SCAN_TASK_PRIO       			9 
+#define SCAN_TASK_PRIO       			4 
 //ÉèÖÃÈÎÎñ¶ÑÕ»´óÐ¡
 #define SCAN_STK_SIZE  		    		64
 //ÈÎÎñ¶ÑÕ»
@@ -57,16 +57,10 @@ void scanf_task(void *pdata);
 
 ////////////////////////////////////////////////////////////////////////
 
-#define MASTERLED_TASK_PRIO       			5 
-//ÉèÖÃÈÎÎñ¶ÑÕ»´óÐ¡
-#define MASTERLED_STK_SIZE  		    		128
-//ÈÎÎñ¶ÑÕ»
-OS_STK MASTERLED_TASK_STK[MASTERLED_STK_SIZE];
-//ÈÎÎñº¯Êý
-void masterled_task(void *pdata);
+
 
 ////////////////////////////////////////////////////////////////////////
-#define MYLED_TASK_PRIO       			4 
+#define MYLED_TASK_PRIO       			5
 //ÉèÖÃÈÎÎñ¶ÑÕ»´óÐ¡
 #define MYLED_STK_SIZE  		    		128
 //ÈÎÎñ¶ÑÕ»
@@ -165,6 +159,7 @@ int main(void)
 	TIM4_Int_Init(9999*2,7199);//10KhzµÄ¼ÆÊýÆµÂÊ£¬¼ÆÊý10K´ÎÎª1000ms 
 	 initmybox();
 	 init_mystatus(SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
+	 slave[0]=0;
 EXTI_Configuration();//³õÊ¼»¯º¯Êý
 
 	OSInit();  	 			//³õÊ¼»¯UCOSII
@@ -186,7 +181,6 @@ void start_task(void *pdata)
 	OSTaskCreate(master_task,(void *)0,(OS_STK*)&MASTER_TASK_STK[MASTER_STK_SIZE-1],MASTER_TASK_PRIO);	 				   
 	OSTaskCreate(Receive_task,(void *)0,(OS_STK*)&Receive_TASK_STK[Receive_STK_SIZE-1],Receive_TASK_PRIO);
 	OSTaskCreate(myled_task,(void *)0,(OS_STK*)&MYLED_TASK_STK[MYLED_STK_SIZE-1],MYLED_TASK_PRIO);
-	OSTaskCreate(masterled_task,(void *)0,(OS_STK*)&MASTERLED_TASK_STK[MASTERLED_STK_SIZE-1],MASTERLED_TASK_PRIO);
 	OSTaskCreate(SETID_task,(void *)0,(OS_STK*)&SETID_TASK_STK[SETID_STK_SIZE-1],SETID_TASK_PRIO);
       OSTaskCreate(scanf_task,(void *)0,(OS_STK*)&SCAN_TASK_STK[SCAN_STK_SIZE-1],SCAN_TASK_PRIO);
  	OSTaskSuspend(START_TASK_PRIO);	//¹ÒÆðÆðÊ¼ÈÎÎñ.
@@ -204,8 +198,6 @@ void Receive_task(void *pdate)//´Ó»úÈÎÎñ
     	{
 		 if(mybox.master==1)
 		 	{
-                     OSTaskResume(MASTER_TASK_PRIO );//Æô¶¯Ö÷»úÈÎÎñ×´Ì¬
-			OSTaskResume(MASTERLED_TASK_PRIO );//Æô¶¯Ö÷»úÈÎÎñ×´Ì¬
 			OSTaskSuspend(Receive_TASK_PRIO);//¹ÒÆð´Ó»úÈÎÎñ
 
 		        }
@@ -220,54 +212,32 @@ mybox.myid=AT24CXX_ReadOneByte(0x0010);
 			  	   
 	 	}
 
-     // if(led_lock==0){temperature();key_lcd();}
 	}
 	}
  /**************Ö÷»úÈÎÎñ**********************/
   void master_task(void *pdata)	  //Ö÷»úÈÎÎñ
   {	  OS_CPU_SR cpu_sr=0;
-      u8 go=0;
 	  u32 i;
 	  // u8 *msg,err;
 	  u8 try_cont=0;
    while(1)
    	{
   	if(mybox.master==1)
-     {	hguestnum=111;
+     {	
+     hguestnum=111;
+	OSSemPost(scan_slave);
 	if(init==1)
 		{
-	//		dianya_zhi=400;//·ÀÖ¹±¨¾¯²âÊÔÊ¹ÓÃ
-	//		tempshuzhi=30;//·ÀÖ¹±¨¾¯²âÊÔÊ¹ÓÃ
-    //   delay_time(5000);//³õÊ¼»¯ÑÓÊ±£¬Ê¹ÏµÍ³ÎÈ¶¨
-    	  led_on_off(ALL_NODE_LCD_LOCK,0);
 	   scanf_slave_machine();
-	for(i=1;i<=slave[0];i++){set_statuslist_1(slave[i],0,0,0);set_statuslist_2(slave[i],0,0,0);}//³õÊ¼»¯Á½¸ö×´Ì¬¶ÓÁ  
 		  	   init=0;
 		}
-	   if(go==0)
-	  { myled(); 
-	   delay_time(1);
-	   mybox.myid=AT24CXX_ReadOneByte(0x0010);
-		 if(((gonglvshishu)<90)&&(L_C_flag==1))
-		 	{
-              offset_idlepower();
-		       }
-		 if((gonglvshishu)>95&&(L_C_flag==1))
-		 	{
-                        unload_power(system_status_list_1,system_status_list_2);
-		       }
-	        if((idle_time>400)&&(gonglvshishu>90&&gonglvshishu<95)&&(L_C_flag==1))
-                {idle_time=0;turn_power(system_status_list_1,system_status_list_2);}
-		if(L_C_flag==0){C_unload_power(system_status_list_1, system_status_list_2);}
-		if(scan_time>60*second)
-			{
-			led_on_off(ALL_NODE_LCD_LOCK,0); 
-			scanf_slave_machine();
-			scan_time=0;
-                    	for(i=1;i<=slave[0];i++){set_statuslist_1(slave[i],0,0,0);set_statuslist_2(slave[i],0,0,0);}//³õÊ¼»¯Á½¸ö×´Ì¬¶ÓÁ  
+	  
+	  computer_gonglu(system_status_list_1,system_status_list_2,slave);
 
-		        }
-	   }
+	   delay_time(1);
+	 
+	 delay_ms(800);
+  
 			
 			   
 			     	
@@ -277,7 +247,6 @@ mybox.myid=AT24CXX_ReadOneByte(0x0010);
 	if(mybox.master==0)
 	{
 		OS_ENTER_CRITICAL();
-		 OSTaskResume(Receive_TASK_PRIO );//Æô¶¯´Ó»úÈÎÎñ×´Ì¬
 		OSTaskSuspend(MASTER_TASK_PRIO );//¹ÒÆðÖ÷»úÈÎ×´Ì¬.
 		OS_EXIT_CRITICAL();	
 	}
@@ -288,14 +257,11 @@ void myled_task(void *pdata)
 {
 while(1)
 {
-if(mybox.master==1)OSTaskSuspend( MYLED_TASK_PRIO);
- if(led_lock==0)
- 	{temperature();
- //key_lcd();
+ 	temperature();
  key_idset();//°´¼üÓëÏÔÊ¾¹¦ÄÜ
   LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//Ë¢Ö¸Ê¾µÆ£¬Èç¹ûÏÔÊ¾Æ÷ÓÐÅÔÂ·µçÈÝÂË²¨ ¿ÉÒÔÉ¾³ý
-        }
-//delay_ms(50);
+        
+delay_ms(100);
 }
 }
 
@@ -317,7 +283,6 @@ void SETID_task(void *pdata)
                       		OSTaskSuspend(MASTER_TASK_PRIO );//¹ÒÆðÖ÷»úÈÎ×´Ì¬.
                       		OSTaskSuspend( MYLED_TASK_PRIO);
                                    OSTaskSuspend(Receive_TASK_PRIO);
-                                   OSTaskSuspend(MASTERLED_TASK_PRIO);
 						OS_EXIT_CRITICAL();
 					HT595_Send_Byte(YELLOW_YELLOW|background_light_on);
                                       myled(); 									  
@@ -332,7 +297,6 @@ void SETID_task(void *pdata)
 		 OSTaskResume(MASTER_TASK_PRIO );//Æô¶¯Ö÷»úÈÎÎñ×´Ì¬
 		 OSTaskResume(MYLED_TASK_PRIO );//Æô¶¯ÏÔÊ¾ÈÎÎñ×´Ì¬
 		 OSTaskResume(Receive_TASK_PRIO );//Æô¶¯´Ó»úÈÎÎñ×´Ì¬
-               OSTaskResume(MASTERLED_TASK_PRIO);			   
                OSTaskSuspend(SETID_TASK_PRIO);
 			   OS_EXIT_CRITICAL();	
 			 }
@@ -345,18 +309,7 @@ void SETID_task(void *pdata)
 
 
 
-void masterled_task(void *pdata)
-{
-while(1)
-{
-if(mybox.master==0)OSTaskSuspend( MASTERLED_TASK_PRIO);
-gonglvyinshu();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
-temperature();
-key_lcd();
-delay_time(1);
-delay_ms(50);//Ã»ÓÐÑÓÊ±£¬ÆÁ»áËÀ»ú
-}
-}
+
 
 
 /******************************************/
@@ -472,32 +425,11 @@ if((mybox.send-mybox.myid)==NODE_LCD_LOCK_BASE)
 led_lock=1;
 return 4;
 }
-/*
-if(mybox.send>=Sub_Order&&mybox.send<=(Sub_Order+64))
-{
-    if(i==1&&j==1)
-{
-//led_lock=0;//²Ù×÷Íê³É¿ªËø
-OSSemPost(sub_machine1_close);
-}
-    if(i==1&&j==0)
-{
-//led_lock=0;//²Ù×÷Íê³É¿ªËø
-OSSemPost(sub_machine1_open);
-}
-    if(i==2&&j==1)
-{
-//led_lock=0;//²Ù×÷Íê³É¿ªËø
-OSSemPost(sub_machine2_close);
-}
-    if(i==2&&j==0)
-{
-//led_lock=0;//²Ù×÷Íê³É¿ªËø
-OSSemPost(sub_machine2_open);
-}												
+if(mybox.send==5)//²é¿´´Ó»ú×´Ì¬
+ {
+  status_trans_rs485_scantask(&mystatus);
 return 5;
-}
-*/
+ }
 
 return 6; //²Ù×÷Ê§°Ü
 }
@@ -591,9 +523,10 @@ void sub_machine2_open_task(void *pdate)//´Ó»úÈÎÎñ
 while(1)
 {
         OSSemPend(scan_slave,0,&err);
-       led_on_off(ALL_NODE_LCD_LOCK,0);
              scanf_slave_machine();
- 
+  init_Queue(system_status_list_1,slave,1);
+  init_Queue(system_status_list_2,slave,2);
+
 
 }
 }
@@ -681,4 +614,5 @@ mystatus.work_status[1]=1;
 	   	OSIntExit();  
 
 }
+
 

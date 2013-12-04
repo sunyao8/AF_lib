@@ -17,6 +17,7 @@ u16 RS485_RX_BUF[64]; 		//½ÓÊÕ»º³å,×î´ó64¸ö×Ö½Ú
 u8 RS485_RX_CNT=0;  
 //Ä£Ê½¿ØÖÆ
  u16  dog_clock=10;
+		 u16 K_BT=10;//µçÁ÷ÏµÊý
 
  OS_EVENT * RS485_MBOX,* RS485_STUTAS_MBOX;			//	rs485ÓÊÏäÐÅºÅÁ¿
  OS_EVENT *Heartbeat;			 //ÐÄÌøÐÅºÅÁ¿
@@ -421,7 +422,18 @@ mystatus.work_time[1]=work_time_2;
 	RS485_Send_Data(statusbuf,10);//·¢ËÍ10¸ö×Ö½Ú
 	OS_EXIT_CRITICAL();	
 }
-
+ void status_trans_rs485_scantask(status_box *mystatus)//´Ó»ú³ÌÐò
+{  	 OS_CPU_SR cpu_sr=0;
+    OS_ENTER_CRITICAL();
+    statusbuf[0]='&';
+	statusbuf[1]='#';
+	statusbuf[2]=mystatus->myid;
+	statusbuf[3]=mystatus->work_status[0];
+	statusbuf[4]=mystatus->work_status[1];
+	statusbuf[5]='*';
+	RS485_Send_Data(statusbuf,6);//·¢ËÍ10¸ö×Ö½Ú
+	OS_EXIT_CRITICAL();	
+}
  void status_trans_rs485_dis(status_box *mystatus)//´Ó»ú³ÌÐò
 {  	 OS_CPU_SR cpu_sr=0;
     OS_ENTER_CRITICAL();
@@ -456,355 +468,46 @@ mystatus.work_time[1]=work_time_2;
    	   system_status_list_1[tx_r485[2]].size=tx_r485[3];
    	   system_status_list_1[tx_r485[2]].work_status=tx_r485[5];
        system_status_list_1[tx_r485[2]].work_time=tx_r485[7];
+	          system_status_list_1[tx_r485[2]].group=1;
+
 	   system_status_list_2[tx_r485[2]].myid=tx_r485[2];
    	   system_status_list_2[tx_r485[2]].size=tx_r485[4];
    	   system_status_list_2[tx_r485[2]].work_status=tx_r485[6];
        system_status_list_2[tx_r485[2]].work_time=tx_r485[8];
-	   
+	          system_status_list_2[tx_r485[2]].group=2;
+
 		 // LED0=!LED0;
    }
 
 
-void set_statuslist_1(u8 id,u8 size,u8 work_status,u8 work_time)
+void set_statuslist_1(u8 count,u8 id,u8 size,u8 work_status,u8 work_time,u8 group)
 {
-       system_status_list_1[id].myid=id;
-   	   system_status_list_1[id].size=size;
-   	   system_status_list_1[id].work_status=work_status;
-       system_status_list_1[id].work_time=work_time;
+       system_status_list_1[count].myid=id;
+   	   system_status_list_1[count].size=size;
+   	   system_status_list_1[count].work_status=work_status;
+       system_status_list_1[count].work_time=work_time;
+       system_status_list_1[count].group=group;
 
 }
 
-void set_statuslist_2(u8 id,u8 size,u8 work_status,u8 work_time)
+void set_statuslist_2(u8 count,u8 id,u8 size,u8 work_status,u8 work_time,u8 group)
 {
-       system_status_list_2[id].myid=id;
-   	   system_status_list_2[id].size=size;
-   	   system_status_list_2[id].work_status=work_status;
-       system_status_list_2[id].work_time=work_time;
+       system_status_list_2[count].myid=id;
+   	   system_status_list_2[count].size=size;
+   	   system_status_list_2[count].work_status=work_status;
+       system_status_list_2[count].work_time=work_time;
+       system_status_list_2[count].group=group;
 
 }
 
 
-void offset_idlepower()  //¹¦ÂÊ²¹³¥º¯Êý£¬Èý¸ö²ÎÊý ÎÞ¹¦¹¦ÂÊ ¹¦ÂÊÒòÊý ¿ÕÏÐ¶ÓÁÐ
-{
- u8 i,j;
- u8 label_idle1=0,label_idle2=0;
-  turn_flag=1;
-  //led_on_off(IDLE_NODE_LCD_LOCK,0);
-  led_on_off(IDLE_NODE_LCD_LOCK,0);
-for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
-  led_on_off(ALL_NODE_LCD_UNLOCK,0);
- label_idle1=sort_idlenode_list(sort_idle_list_1,system_status_list_1);
-  label_idle2=sort_idlenode_list(sort_idle_list_2,system_status_list_2);
- 
-/***********************************************************************/
-//label_idle1=0;//ÊµÑé Ö»Í¶ÇÐµÚ¶þ×éÓÃ £¬²úÆ·±ØÐëÈ¥µôÕâ¾ä»°
-/************************************************************************/
-
-	for(j=1;j<=label_idle1;j++)
-		{
-
-		/*	if(done_list1_flag==0)
-                            {
-
-				   for(i=1;i<=label_idle1;i++)
-				   	    {
-                                          idle_done_nodelist_1[sort_idle_list_1[i].myid]=0;
-
-				           }
-				   done_list1_flag=1;
-			       }	
-                   */
-						 
-			delay_time(1);
-		
-		              if(gonglvshishu>90)break;
-		                 else{
-                    if((wugong_computer)>=(sort_idle_list_1[j].size))
-			             { ///  if(idle_done_nodelist_1[sort_idle_list_1[j].myid]==0)    ///
-			                   {                   
-                                           led_on_off(NODE_LCD_LOCK_BASE,sort_idle_list_1[j].myid);//1000ms
-				//	order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,Sub_Order,1,1);
-			order_trans_rs485(mybox.myid,sort_idle_list_1[j].myid,1,1,1,CONTROL);
-
-						///		idle_done_nodelist_1[sort_idle_list_1[j].myid]=1;   ///
-										 
-		
-					    }
-					}
-				///	done_count_1++;///
-				///	if(done_count_1==label_idle1)///
-				///		{done_count_1=0;done_list1_flag=0;}///
-		   	                  }
-
-				myled();  //120ms		 
-		   }
-
- 	if(gonglvshishu<90)
- 		{
-	for(j=1;j<=label_idle2;j++)
-		{
-		         /*             if(done_list2_flag==0)
-                            {
-
-				   for(i=1;i<=label_idle2;i++)
-				   	    {
-                                          idle_done_nodelist_2[sort_idle_list_2[i].myid]=0;
-
-				           }
-				   done_list2_flag=1;
-			       }
-		    */ 
-			delay_time(1);
-		
-
-		   if(gonglvshishu>90)break;
-		   else{
-                          if((wugong_computer)>=(sort_idle_list_2[j].size))
-                          	            { /// if(idle_done_nodelist_2[sort_idle_list_2[j].myid]==0)
-                          	                {     
-                                        led_on_off(NODE_LCD_LOCK_BASE,sort_idle_list_2[j].myid);
-					//	  order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,Sub_Order,2,1);///
-					order_trans_rs485(mybox.myid,sort_idle_list_2[j].myid,1,2,1,CONTROL);
-                                                idle_done_nodelist_2[sort_idle_list_2[j].myid]=1;
-										
-                          	                }
-					///	  done_count_2++;
-					///	  	if(done_count_2==label_idle2)
-					///	  	{done_count_2=0;done_list2_flag=0;}
-						  
-						  }
-		   	 }
-
-			myled();
-	    }
-
- 		}
-
-}
-
-void turn_power(status_list_node *list_1,status_list_node *list_2)//µ½¹¦ÂÊÒòËØÂú×ãÎÈ¶¨Ìõ¼þºó£¬½øÈëµçÈÝÆ÷ÂÖÐÝº¯Êý
-{
-u8 i,j,k,t,q;
-u8 label_busy1,label_busy2;
- if(turn_flag==1)
-   {
-   			led_on_off(IDLE_NODE_LCD_LOCK,0);
-   for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]); 
-   turn_label_idle=turn_idlenode_list(turn_idle_list,list_1,list_2);//µÃµ½¿ÕÏÐ¶ÓÁÐ
-   }  
-   turn_flag=0;
-
-if(turn_label_idle!=0)
-{	      led_on_off(BUSY_NODE_LCD_LCOK,0);
-   for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);   			
-    label_busy1=sort_busynode_list(sort_busy_list_1,list_1);//Ë¢ÐÂlist_1µÄbusy±íµÄÃ¿¸ö¹¤×÷½ÚµãµÄ¹¤×÷Ê±¼ä
-    label_busy2=sort_busynode_list(sort_busy_list_2,list_2);//Ë¢ÐÂlist_2µÄbusy±íµÄÃ¿¸ö¹¤×÷½ÚµãµÄ¹¤×÷Ê±¼ä
-
-      for(i=1;i<=label_busy1;i++)
-	  	{ if(sort_busy_list_1[i].work_time>=TIME_OUT)
-      	      {  
-				for(j=1;j<=turn_label_idle;j++)
-                	{  
-                       if(sort_busy_list_1[i].size==turn_idle_list[j].size)
-                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1,CONTROL);delay_us(10000);
-                             order_trans_rs485(mybox.myid,sort_busy_list_1[i].myid,1,1,0,CONTROL);
-						 	{ k=sort_busy_list_1[i].myid;
-                                                    t=sort_busy_list_1[i].size;
-                                                     //  sort_busy_list_1[i].work_time=0;
-							  for(q=j;q<turn_label_idle;q++)
-							  	{turn_idle_list[q].myid=turn_idle_list[q+1].myid;
-                                                          turn_idle_list[q].size=turn_idle_list[q+1].size;
-								turn_idle_list[q].group=turn_idle_list[q+1].group;
-							      }
-							    turn_idle_list[turn_label_idle].myid=k;
-							    turn_idle_list[turn_label_idle].size=t;
-							   turn_idle_list[turn_label_idle].group=1;
-						     } 
-							 delay_ms(30200);
-                                           break;//·ÀÖ¹±¾Ñ­»·ÖÐ¶Ôi£¬ÖØ¸´Æ¥ÅäÍ¶ÇÐ
-
-					   }
-				    }
-      	}
-      	}
-
-	      for(i=1;i<=label_busy2;i++)	
-   { if(sort_busy_list_2[i].work_time>=TIME_OUT)
-      	      {  
-				for(j=1;j<=turn_label_idle;j++)
-                	{  
-                       if(sort_busy_list_2[i].size==turn_idle_list[j].size)
-                       	{ order_trans_rs485(mybox.myid,turn_idle_list[j].myid,1,turn_idle_list[j].group,1,CONTROL);delay_us(10000);
-                             order_trans_rs485(mybox.myid,sort_busy_list_2[i].myid,1,2,0,CONTROL);delay_us(10000);
-						 	{ k=sort_busy_list_2[i].myid;
-                                                    t=sort_busy_list_2[i].size;
-                                                     //  sort_busy_list_2[i].work_time=0;
-							  for(q=j;q<turn_label_idle;q++)
-							  	{turn_idle_list[q].myid=turn_idle_list[q+1].myid;
-                                                          turn_idle_list[q].size=turn_idle_list[q+1].size;
-								turn_idle_list[q].group=turn_idle_list[q+1].group;
-							      }
-							    turn_idle_list[turn_label_idle].myid=k;
-							    turn_idle_list[turn_label_idle].size=t;
-							   turn_idle_list[turn_label_idle].group=2;
-						     } 
-							delay_ms(30200);
-                                           break;//·ÀÖ¹±¾Ñ­»·ÖÐ¶Ôi£¬ÖØ¸´Æ¥ÅäÍ¶ÇÐ
-
-					   }
-				    }
-      	}
-      	}
-   }
-}
-
-void unload_power(status_list_node *list_1,status_list_node *list_2)
-{
- u8 i,j;
- u8 label_busy1,label_busy2;
-  turn_flag=1;
-  led_on_off(BUSY_NODE_LCD_LCOK,0);
-for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
- label_busy2=sort_busynode_list_asc(sort_busy_list_2,list_2);
- label_busy1=sort_busynode_list_asc(sort_busy_list_1,list_1);
-				
 
 
- 
-/***********************************************************************/
-//label_busy1=0;//ÊµÑé Ö»Í¶ÇÐµÚ¶þ×éÓÃ £¬²úÆ·±ØÐëÈ¥µôÕâ¾ä»°
-/************************************************************************/
-
-	for(j=1;j<=label_busy1&&label_busy1>0;)
-		{
-                     delay_time(1);
-		   if(gonglvshishu<95)break;
-		   else {	
-						if((wugong_computer-wugong_95)>sort_busy_list_1[label_busy1].size)
-				   {
-                             led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[label_busy1].myid);                                         											
-				   order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0,CONTROL);
-				  // delay_ms(3500);
-				   label_busy1--;
-                              
-
-				}
-
-						if((wugong_computer-wugong_95)<=sort_busy_list_1[j].size)
-				   {
-	                             led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[j].myid);                                         														   
-				   order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0,CONTROL);
-				 // delay_ms(3500);
-                              j++;
-				}
-
-		          }
-		   myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
-	    }
-
-if(gonglvshishu>95)
- {
-	for(j=1;j<=label_busy2&&label_busy2>0;)
-		{
-                        delay_time(1);
-		   if(gonglvshishu<95)break;
-		   else{	                               
-                                	if((wugong_computer-wugong_95)>sort_busy_list_2[label_busy2].size)
-				   {
-				          led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[label_busy2].myid);                                         											
-				   order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0,CONTROL);
-				 // delay_ms(3500);
-				   label_busy2--;
-                                                         
-				}
-
-			   if((wugong_computer-wugong_95)<=sort_busy_list_2[j].size)
-		   	       {
-				          led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[j].myid);                                         											
-				   order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0,CONTROL);
-				  // delay_ms(3500);
-				   j++;
-			   }
-                         				
-   
-
-		           }
-		  myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
-        }
-
-}
-
-}
-
-void C_unload_power(status_list_node *list_1,status_list_node *list_2)
-{
- u8 i,j;
- u8 label_busy1,label_busy2;
-  turn_flag=1;
-  led_on_off(BUSY_NODE_LCD_LCOK,0);
-for(i=1;i<=slave[0];i++)inquiry_slave_status(slave[i]);
- label_busy2=sort_busynode_list_asc(sort_busy_list_2,list_2);
- label_busy1=sort_busynode_list_asc(sort_busy_list_1,list_1);
-
-	for(j=1;j<=label_busy1&&label_busy1!=0;)
-		{
-
-                     delay_time(1);
-		   if(L_C_flag==1)break;
-		   else {	
-                            				if((wugong_computer)>sort_busy_list_1[label_busy1].size)
-				                            { 									
-								  led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[label_busy1].myid);
-								order_trans_rs485(mybox.myid,sort_busy_list_1[label_busy1].myid,1,1,0,CONTROL);
-				                           //   delay_ms(3500);
-				                                label_busy1--;
-				                             }
-
-                                                            if((wugong_computer)<=sort_busy_list_1[j].size)
-			                                     { 
-			                                     led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_1[j].myid);
-                          			                  order_trans_rs485(mybox.myid,sort_busy_list_1[j].myid,1,1,0,CONTROL);
-					                      //    delay_ms(3500);
-											  j++;
-	                                                    }
-		          }
-
-		   myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
-	    }
-
-if(L_C_flag==0)
- {
-	for(j=1;j<=label_busy2&&label_busy2!=0;)
-		{
-                            delay_time(1);
-		   if(L_C_flag==1)break;
-		   else{	
-                                                            if((wugong_computer)>sort_busy_list_2[label_busy2].size)
-				   {
-			                                     led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[label_busy2].myid);                                                          								
-				   order_trans_rs485(mybox.myid,sort_busy_list_2[label_busy2].myid,1,2,0,CONTROL);
-				//  delay_ms(3500);
-				   label_busy2--;
-
-				}
-
-			 if((wugong_computer)<=sort_busy_list_2[j].size)
-			{
-                     led_on_off(NODE_LCD_LOCK_BASE,sort_busy_list_2[j].myid);                                      														   
-			order_trans_rs485(mybox.myid,sort_busy_list_2[j].myid,1,2,0,CONTROL);
-			//delay_ms(3500);	
-			j++;
-
-                     }
-
-		   }
-
-	myled();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
-        }
 
 
-}
-}
+
+
+
 
 u8 sort_idlenode_list(idle_list *sort_idle_list,status_list_node *list)//¿ÕÏÐÓÐÐò¶ÓÁÐ(°´ÈÝÁ¿´óÐ¡ÓÉ´óµ½Ð¡ÅÅÁÐ£¬·µ»Ø¿ÕÏÐ½Úµã¸öÊý)
 {
@@ -854,59 +557,7 @@ sort_idle_list[0].size=count;
 
 
 //Î´Íê³É
-u8 offset_idlenode_one_list(offset_node *offset_idle_list,idle_list *sort_idle_list_1,idle_list *sort_idle_list_2)//¿ÕÏÐÓÐÐò¶ÓÁÐ(°´ÈÝÁ¿´óÐ¡ÓÉ´óµ½Ð¡ÅÅÁÐ£¬·µ»Ø¿ÕÏÐ½Úµã¸öÊý)
-{
-u8 i=1,j=1,k,len;
-if(sort_idle_list_1[0].size==0&&sort_idle_list_2[0].size==0){offset_idle_list[0].size=0;return 0;}
 
-else
-{
-for(i=1;i<=sort_idle_list_1[0].size;i++)
-{offset_idle_list[i].myid=sort_idle_list_1[i].myid;
-offset_idle_list[i].size=sort_idle_list_1[i].size;
-offset_idle_list[i].group=1;
-}
-len=sort_idle_list_1[0].size;
-
-for(i=1;i<=sort_idle_list_2[0].size;i++)
-{
-for(;j<=len;j++)
-{
-if(sort_idle_list_2[i].size>offset_idle_list[j].size)
-   {
-           for(k=len;k>=j;k--)
-           	{
-                 offset_idle_list[k+1].size=offset_idle_list[k].size;
-	          offset_idle_list[k+1].myid=offset_idle_list[k].myid;
-		   offset_idle_list[k+1].group=offset_idle_list[k].group;
-					 
-	       }
-		   len++;
-	offset_idle_list[j].size=sort_idle_list_2[i].size;
-	offset_idle_list[j].myid=sort_idle_list_2[i].myid;
-	offset_idle_list[j].group=2;
-       break;
-    }
-if(j>len)
-   { for(;i<=sort_idle_list_2[0].size;i++)
-             {offset_idle_list[j].myid=sort_idle_list_1[i].myid;
-               offset_idle_list[j].size=sort_idle_list_1[i].size;
-               offset_idle_list[j].group=2;
-                     j++;
-             }
-
-     }
-}
-}
-offset_idle_list[0].size=sort_idle_list_1[0].size+sort_idle_list_2[0].size;
-
-return offset_idle_list[0].size;
-
-}
-
-
-
-}
 
 
 
@@ -1163,22 +814,17 @@ void delay_time(u32 time)
 { heartbeat(time);
 }  //±¾ÏµÍ³µÄÑÓÊ±º¯Êý£¬time*10ms
 
-u8 inquiry_slave_status(u8 id)   
+u8 inquiry_slave_status(u8 count,u8 id)   
   {  u8 *msg;
         u8 err;
-			if(id==mybox.myid)
-		{
-	   set_statuslist_1(mystatus.myid,mystatus.size[0],mystatus.work_status[0],mystatus.work_time[0]);//Ö÷»ú×´Ì¬ÐÅÏ¢Ð´Èë×´Ì¬±í
-       set_statuslist_2(mystatus.myid,mystatus.size[1],mystatus.work_status[1],mystatus.work_time[1]);
-	   return 1;
-		}
+	
 
    order_trans_rs485(mybox.myid,id,2,0,0,CONTROL);
   // delay_us(10000);
    msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/50,&err);
-   if(err==OS_ERR_TIMEOUT){set_statuslist_1(id,0,2,0);set_statuslist_2(id,0,2,0);return 0;}//(u8 id, u8 size, u8 work_status, u8 work_time) 
+   if(err==OS_ERR_TIMEOUT){return 0;}//(u8 id, u8 size, u8 work_status, u8 work_time) 
 	else 
-	{  rs485_trans_status(msg);return 1;}
+	{ set_statuslist_1(count,msg[2],msg[3],msg[5],msg[7],1);set_statuslist_2(count,msg[2],msg[4],msg[6],msg[8],2);return 1;}
 
 } //²éÑ¯´Ó»ú×´Ì¬²¢±£´æµ½´Ó»ú×´Ì¬±íÖÐ£¬²ÎÊýidÊÇÒª²éÑ¯µÄ´Ó»úºÅ
 
@@ -1191,10 +837,7 @@ u8 inquiry_slave_status(u8 id)
 
 void gonglvyinshu()
 {
-		u16 adc_vx=0,adc_vmax=0,adc_imax=0;
-		//u16 adc_ix;
-		u16 k=100;//µçÁ÷ÏµÊý
-		 float adcv,adci,temp,X,Y,Mag;
+		 float adcv,adci,X,Y,Mag_v,Mag_i;
 	        u16 i=0,flag_v=5,flag_i=5;
 	         int32_t lX=0,lY=0;
 
@@ -1251,15 +894,18 @@ if(adc_imax<1750)
 		 lX  = (lBUFOUT_V[flag_v] << 16) >> 16;
                  lY  = (lBUFOUT_V[flag_v] >> 16);
 				angle[0]=atan2(lY,lX);
-
+				   X    = FFT_NM* ((float)lX) /32768;
+                   Y    = FFT_NM* ((float)lY) /32768;
+	Mag_v= sqrt(X*X + Y*Y)/FFT_NM/1.414;
+                   dianya_zhi= (float)((Mag_v* 65536)/10.9);
+	
 		lX  = (lBUFOUT_I[flag_i] << 16) >> 16;
                  lY  = (lBUFOUT_I[flag_i] >> 16);
 				   {
                    X    = FFT_NM* ((float)lX) /32768;
                    Y    = FFT_NM* ((float)lY) /32768;
-                    Mag = sqrt(X*X + Y*Y)/FFT_NM/1.414;
-					k=1000/k;
-                   dianliuzhi= (u32)(Mag * 65536)/k;
+                    Mag_i = sqrt(X*X + Y*Y)/FFT_NM/1.414;
+                 dianliuzhi= (u32)(Mag_i* 65536)/K_BT;
                    }
 				angle[1]=atan2(lY,lX);
 				
@@ -1299,28 +945,7 @@ if(adc_imax<1750)
 		
 			}
 	
-		 for(i=0;i<500;i++)
-	  	 {
-	  	 adc_vx=Get_Adc_Average(ADC_Channel_1,3);
-		  // adc_vx=Get_Adc(ADC_Channel_1);
-		   if(adc_vx>adc_vmax)
-		   adc_vmax=adc_vx;
-	  	 }
-/*		 
-	   for(i=0;i<500;i++)
-	  {
-		 adc_ix=Get_Adc_Average(ADC_CH4,3);
-		 if(adc_ix>adc_imax)
-		 adc_imax=adc_ix;
-	  }
 
-*/
-             
-
-	  temp=((float)adc_vmax*(3.3/4096))*1000;
-	dianya_zhi=((u16)(5*temp-6005))/10;
- 	  adc_vmax=0;
-	  adc_imax=0;
 			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*abs(cos((angle[1]-angle[0]))*100))/100000);
 			wugong_95= (uint16_t)((17.32*dianliuzhi*dianya_zhi*31)/100000);//¹¦ÂÊÒòËØÔÚ0.95Ê±µÄ£¬ÎÞ¹¦¹¦Â
 			//wugong_computer=(uint16_t)((17.32*dianliuzhi*dianya_zhi*sin((angle[1]-angle[0]))*100/100000));
@@ -1328,7 +953,8 @@ if(adc_imax<1750)
                     //wugongkvar=wugong_computer;
 			
 		
-		
+		   delay_time(1);
+	
 
 //ÎÞ¹¦¹¦ÂÊ
 }
@@ -1457,19 +1083,922 @@ Alarm();//ÊÇ·ñÐèÒª±¨¾¯
 
 void scanf_slave_machine()
 {
-u8 i,j;
-u8 count=1;
-for(i=1;i<33;i++)
+u8 i,j,g,s;
+u8 flag_comm=0;
+u8 *msg;
+  u8 err;
+
+
+
+
+{
+for(i=1;i<=32;i++)
 	{  
-	j=inquiry_slave_status(i);
-        if(j==1){slave[count]=i;count++;}
+
+for(g=1;g<=slave[0];g++)
+{
+if(i==system_status_list_1[g].myid){flag_comm=1;break;}
+if(i==system_status_list_2[g].myid){flag_comm=2;break;}
+
+else flag_comm=0;
+}
+if(flag_comm==0)
+		{
+		{
+	j=inquiry_slave_status(slave[0]+1,i);
+	        if(j==1){slave[0]++;break;}
+		}
+			}
+if(flag_comm==1||flag_comm==2)
+
+{
+{order_trans_rs485(mybox.myid,i,5,0,0,CONTROL); 
+  msg=(u8 *)OSMboxPend(RS485_STUTAS_MBOX,OS_TICKS_PER_SEC/10,&err);
+     if(err==OS_ERR_TIMEOUT);
+else {
+	if(flag_comm==1)
+		{
+	if(system_status_list_1[g].group==1)system_status_list_1[g].work_status=msg[3];
+         else {system_status_list_1[g].work_status=msg[4];}
+		for(s=1;s<=slave[0];s++)
+                   if(i==system_status_list_2[s].myid)
+				   	{
+	if(system_status_list_2[s].group==1){system_status_list_2[s].work_status=msg[3];break;}
+         else {system_status_list_2[s].work_status=msg[4];break;}
+            }
+            }
+	if(flag_comm==2)
+		{
+	if(system_status_list_2[g].group==1)system_status_list_2[g].work_status=msg[3];
+         else {system_status_list_2[g].work_status=msg[4];}
+		 		for(s=1;s<=slave[0];s++)
+                   if(i==system_status_list_1[s].myid)
+				   	{
+	if(system_status_list_1[s].group==1){system_status_list_1[s].work_status=msg[3];break;}
+         else {system_status_list_1[s].work_status=msg[4];break;}
+            }
+            }
        }
-      slave[0]=count-1;
-	  
+
+}
+	
+
+
+}
+	flag_comm=0;
+       j=0;
+    }
+}	  
+}
+
+
+void init_Queue(status_list_node *comm_list,u8 *slave_comm ,u8 group)
+{
+
+u8 i,j;
+
+u8 t=0;
+u8 g=0;
+u8 w=0;
+u8 s=0;
+u8 c=0;
+if(group==1)
+{
+for(i=2;i<=slave_comm[0];i++)
+{
+  
+          t=comm_list[i].size;
+	   g=comm_list[i].myid;
+	   w=comm_list[i].work_time;
+	   s=	comm_list[i].work_status;
+	   c=comm_list[i].group;
+	   for(j=i-1;j>=1;j--)
+	   	{
+	   	if(t<comm_list[j].size)
+	   		{
+	   	comm_list[j+1].myid=comm_list[j].myid;
+               comm_list[j+1].size=comm_list[j].size;
+		 comm_list[j+1].work_time=comm_list[j].work_time;
+		 	comm_list[j+1].work_status=comm_list[j].work_status;
+			 comm_list[j+1].group=comm_list[j].group;
+
+	   		}
+		else break;
+		}
+	   comm_list[j+1].myid=g;
+	   comm_list[j+1].size=t;
+       comm_list[j+1].work_time=w;
+            comm_list[j+1].work_status=s;
+comm_list[j+1].group=c;
+}
+for(i=1;i<=slave_comm[0];i++)
+if(comm_list[i].size==5)
+{
+slave_comm[1]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[1]=0;slave_comm[7]=0;}
+
+if(slave_comm[1]!=0)
+{
+for(i=slave_comm[1];i<=slave_comm[0];i++)
+if(comm_list[i].size!=5)
+{
+slave_comm[7]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[7]=slave_comm[0]+1;}
+
+}
+
+
+for(i=1;i<=slave_comm[0];i++)
+if(comm_list[i].size==10)
+{
+slave_comm[2]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[2]=0;slave_comm[8]=0;}
+
+if(slave_comm[2]!=0)
+{
+for(i=slave_comm[2];i<=slave_comm[0];i++)
+if(comm_list[i].size!=10)
+{
+slave_comm[8]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[8]=slave_comm[0]+1;}
+
+}
+
+
+
+for(i=1;i<=slave_comm[0];i++)
+if(comm_list[i].size==20)
+{
+slave_comm[3]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[3]=0;slave_comm[9]=0;}
+if(slave_comm[3]!=0)
+{
+for(i=slave_comm[3];i<=slave_comm[0];i++)
+if(comm_list[i].size!=20)
+{
+slave_comm[9]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[9]=slave_comm[0]+1;}
+
 }
 
 
 
 
+}
+
+
+/***************************************************/
+if(group==2)
+{
+for(i=2;i<=slave_comm[0];i++)
+{
+  
+          t=comm_list[i].size;
+	   g=comm_list[i].myid;//ÉèÖÃmyidÁ½¸ö
+	   w=comm_list[i].work_time;
+	   s=	comm_list[i].work_status;
+	   	   c=comm_list[i].group;
+
+	   for(j=i-1;j>=1;j--)
+	   	{
+	   	if(t<comm_list[j].size)
+	   		{
+		comm_list[j+1].myid=comm_list[j].myid;
+               comm_list[j+1].size=comm_list[j].size;
+		 comm_list[j+1].work_time=comm_list[j].work_time;
+		 comm_list[j+1].work_status=comm_list[j].work_status;
+		 			 comm_list[j+1].group=comm_list[j].group;
+
+	   		}
+		else break;
+	       }
+	   comm_list[j+1].myid=g;
+	   comm_list[j+1].size=t;
+       comm_list[j+1].work_time=w;
+            comm_list[j+1].work_status=s;
+			comm_list[j+1].group=c;
+
+
+}
+
+
+for(i=1;i<=slave_comm[0];i++)
+if(comm_list[i].size==5)
+{
+slave_comm[4]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[4]=0;slave_comm[10]=0;}
+
+if(slave_comm[4]!=0)
+{
+for(i=slave_comm[4];i<=slave_comm[0];i++)
+if(comm_list[i].size!=5)
+{
+slave_comm[10]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[10]=slave_comm[0]+1;}
+
+}
+
+
+
+for(i=1;i<=slave_comm[0];i++)
+if(comm_list[i].size==10)
+{
+slave_comm[5]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[5]=0;slave_comm[11]=0;}
+
+if(slave_comm[5]!=0)
+{
+for(i=slave_comm[5];i<=slave_comm[0];i++)
+if(comm_list[i].size!=10)
+{
+slave_comm[11]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[11]=slave_comm[0]+1;}
+
+}
+
+
+
+
+for(i=1;i<=slave_comm[0];i++)
+if(comm_list[i].size==20)
+{
+slave_comm[6]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[6]=0;slave_comm[12]=0;}
+if(slave_comm[6]!=0)
+{
+for(i=slave_comm[6];i<=slave_comm[0];i++)
+if(comm_list[i].size!=20)
+{
+slave_comm[12]=i;
+break;
+}
+if(i>slave_comm[0]){slave_comm[12]=slave_comm[0]+1;}
+
+}
+}
+/********************************/
+}
+
+/*********************************/
+
+void change_Queue(u8 list_flag,u8 Level, status_list_node *comm_list_1,status_list_node *comm_list_2,u8 *slave_comm)
+{
+u8 i;
+u8 t=0, g=0,w=0, s=0,c=0;
+
+if(list_flag==1)
+{
+if(Level==5)
+{
+if(slave_comm[1]!=0&&slave_comm[4]!=0)
+
+{
+          t=comm_list_1[slave_comm[1]].size;
+	   g=comm_list_1[slave_comm[1]].myid;
+	   w=comm_list_1[slave_comm[1]].work_time;
+	   s=	comm_list_1[slave_comm[1]].work_status;
+          c=comm_list_1[slave_comm[1]].group;
+for(i=slave_comm[1];i<slave_comm[7]-1;i++)
+  {
+          comm_list_1[i].size=comm_list_1[i+1].size;
+	   comm_list_1[i].myid=comm_list_1[i+1].myid;
+	   comm_list_1[i].work_time=comm_list_1[i+1].work_time;
+	   comm_list_1[i].work_status=comm_list_1[i+1].work_status;
+          comm_list_1[i].group=comm_list_1[i+1].group;
+
+  }
+        comm_list_1[slave_comm[7]-1].size=comm_list_2[slave_comm[4]].size;
+	  comm_list_1[slave_comm[7]-1].myid=comm_list_2[slave_comm[4]].myid;
+	  comm_list_1[slave_comm[7]-1].work_time=comm_list_2[slave_comm[4]].work_time;
+	  comm_list_1[slave_comm[7]-1].work_status=comm_list_2[slave_comm[4]].work_status;
+	 comm_list_1[slave_comm[7]-1].group=comm_list_2[slave_comm[4]].group;
+
+for(i=slave_comm[4];i<slave_comm[10]-1;i++)
+  {
+          comm_list_2[i].size=comm_list_2[i+1].size;
+	   comm_list_2[i].myid=comm_list_2[i+1].myid;
+	   comm_list_2[i].work_time=comm_list_2[i+1].work_time;
+	   comm_list_2[i].work_status=comm_list_2[i+1].work_status;
+          comm_list_2[i].group=comm_list_2[i+1].group;
+
+  }
+        comm_list_2[slave_comm[10]-1].size=t;
+	  comm_list_2[slave_comm[10]-1].myid=g;
+	  comm_list_2[slave_comm[10]-1].work_time=w;
+	  comm_list_2[slave_comm[10]-1].work_status=s;
+        comm_list_2[slave_comm[10]-1].group=c;
+
+}
+if(slave_comm[1]!=0&&slave_comm[4]==0)
+
+{
+   t=comm_list_1[slave_comm[1]].size;
+	   g=comm_list_1[slave_comm[1]].myid;
+	   w=comm_list_1[slave_comm[1]].work_time;
+	   s=	comm_list_1[slave_comm[1]].work_status;
+          c=comm_list_1[slave_comm[1]].group;
+
+for(i=slave_comm[1];i<slave_comm[7]-1;i++)
+  {
+          comm_list_1[i].size=comm_list_1[i+1].size;
+	   comm_list_1[i].myid=comm_list_1[i+1].myid;
+	   comm_list_1[i].work_time=comm_list_1[i+1].work_time;
+	   comm_list_1[i].work_status=comm_list_1[i+1].work_status;
+          comm_list_1[i].group=comm_list_1[i+1].group;
+
+  }
+comm_list_1[slave_comm[7]-1].size=t;
+ comm_list_1[slave_comm[7]-1].myid=g;
+comm_list_1[slave_comm[7]-1].work_time=w;
+ comm_list_1[slave_comm[7]-1].work_status=s;
+comm_list_1[slave_comm[7]-1].group=c;
+
+}
+if(slave_comm[1]==0&&slave_comm[4]!=0)
+
+{
+
+          t=comm_list_1[slave_comm[4]].size;
+	   g=comm_list_1[slave_comm[4]].myid;
+	   w=comm_list_1[slave_comm[4]].work_time;
+	   s=	comm_list_1[slave_comm[4]].work_status;
+          c=comm_list_1[slave_comm[4]].group;
+
+for(i=slave_comm[4];i<slave_comm[10]-1;i++)
+  {
+          comm_list_2[i].size=comm_list_2[i+1].size;
+	   comm_list_2[i].myid=comm_list_2[i+1].myid;
+	   comm_list_2[i].work_time=comm_list_2[i+1].work_time;
+	   comm_list_2[i].work_status=comm_list_2[i+1].work_status;
+	             comm_list_2[i].group=comm_list_2[i+1].group;
+
+
+  }
+        comm_list_2[slave_comm[10]-1].size=t;
+	  comm_list_2[slave_comm[10]-1].myid=g;
+	  comm_list_2[slave_comm[10]-1].work_time=w;
+	  comm_list_2[slave_comm[10]-1].work_status=s;
+        comm_list_2[slave_comm[10]-1].group=c;
+
+
+
+}
+}
+
+if(Level==10)
+{
+if(slave_comm[2]!=0&&slave_comm[5]!=0)
+
+{
+          t=comm_list_1[slave_comm[2]].size;
+	   g=comm_list_1[slave_comm[2]].myid;
+	   w=comm_list_1[slave_comm[2]].work_time;
+	   s=	comm_list_1[slave_comm[2]].work_status;
+          c=comm_list_1[slave_comm[2]].group;
+
+for(i=slave_comm[2];i<slave_comm[8]-1;i++)
+  {
+          comm_list_1[i].size=comm_list_1[i+1].size;
+	   comm_list_1[i].myid=comm_list_1[i+1].myid;
+	   comm_list_1[i].work_time=comm_list_1[i+1].work_time;
+	   comm_list_1[i].work_status=comm_list_1[i+1].work_status;
+          comm_list_1[i].group=comm_list_1[i+1].group;
+
+  }
+       
+comm_list_1[slave_comm[8]-1].size=comm_list_2[slave_comm[5]].size;
+ comm_list_1[slave_comm[8]-1].myid=comm_list_2[slave_comm[5]].myid;
+comm_list_1[slave_comm[8]-1].work_time=comm_list_2[slave_comm[5]].work_time;
+ comm_list_1[slave_comm[8]-1].work_status=comm_list_2[slave_comm[5]].work_status;
+comm_list_1[slave_comm[8]-1].group=comm_list_2[slave_comm[5]].group;
+
+for(i=slave_comm[5];i<slave_comm[11]-1;i++)
+  {
+          comm_list_2[i].size=comm_list_2[i+1].size;
+	   comm_list_2[i].myid=comm_list_2[i+1].myid;
+	   comm_list_2[i].work_time=comm_list_2[i+1].work_time;
+	   comm_list_2[i].work_status=comm_list_2[i+1].work_status;
+	             comm_list_2[i].group=comm_list_2[i+1].group;
+
+
+  }
+        comm_list_2[slave_comm[11]-1].size=t;
+	  comm_list_2[slave_comm[11]-1].myid=g;
+	  comm_list_2[slave_comm[11]-1].work_time=w;
+	  comm_list_2[slave_comm[11]-1].work_status=s;
+        comm_list_2[slave_comm[11]-1].group=c;
+
+}
+if(slave_comm[2]!=0&&slave_comm[5]==0)
+
+{
+   t=comm_list_1[slave_comm[2]].size;
+	   g=comm_list_1[slave_comm[2]].myid;
+	   w=comm_list_1[slave_comm[2]].work_time;
+	   s=	comm_list_1[slave_comm[2]].work_status;
+          c=comm_list_1[slave_comm[2]].group;
+
+for(i=slave_comm[2];i<slave_comm[8]-1;i++)
+  {
+          comm_list_1[i].size=comm_list_1[i+1].size;
+	   comm_list_1[i].myid=comm_list_1[i+1].myid;
+	   comm_list_1[i].work_time=comm_list_1[i+1].work_time;
+	   comm_list_1[i].work_status=comm_list_1[i+1].work_status;
+          comm_list_1[i].group=comm_list_1[i+1].group;
+
+  }
+comm_list_1[slave_comm[8]-1].size=t;
+ comm_list_1[slave_comm[8]-1].myid=g;
+comm_list_1[slave_comm[8]-1].work_time=w;
+ comm_list_1[slave_comm[8]-1].work_status=s;
+comm_list_1[slave_comm[8]-1].group=c;
+
+}
+if(slave_comm[2]==0&&slave_comm[5]!=0)
+
+{
+
+          t=comm_list_1[slave_comm[5]].size;
+	   g=comm_list_1[slave_comm[5]].myid;
+	   w=comm_list_1[slave_comm[5]].work_time;
+	   s=	comm_list_1[slave_comm[5]].work_status;
+          c=comm_list_1[slave_comm[5]].group;
+
+for(i=slave_comm[5];i<slave_comm[11]-1;i++)
+  {
+          comm_list_2[i].size=comm_list_2[i+1].size;
+	   comm_list_2[i].myid=comm_list_2[i+1].myid;
+	   comm_list_2[i].work_time=comm_list_2[i+1].work_time;
+	   comm_list_2[i].work_status=comm_list_2[i+1].work_status;
+	             comm_list_2[i].group=comm_list_2[i+1].group;
+
+
+  }
+        comm_list_2[slave_comm[11]-1].size=t;
+	  comm_list_2[slave_comm[11]-1].myid=g;
+	  comm_list_2[slave_comm[11]-1].work_time=w;
+	  comm_list_2[slave_comm[11]-1].work_status=s;
+        comm_list_2[slave_comm[11]-1].group=c;
+
+
+
+}
+	
+}
+
+if(Level==20)
+
+{
+if(slave_comm[3]!=0&&slave_comm[6]!=0)
+{
+          t=comm_list_1[slave_comm[3]].size;
+	   g=comm_list_1[slave_comm[3]].myid;
+	   w=comm_list_1[slave_comm[3]].work_time;
+	   s=	comm_list_1[slave_comm[3]].work_status;
+          c=comm_list_1[slave_comm[3]].group;
+
+for(i=slave_comm[3];i<slave_comm[9]-1;i++)
+  {
+          comm_list_1[i].size=comm_list_1[i+1].size;
+	   comm_list_1[i].myid=comm_list_1[i+1].myid;
+	   comm_list_1[i].work_time=comm_list_1[i+1].work_time;
+	   comm_list_1[i].work_status=comm_list_1[i+1].work_status;
+          comm_list_1[i].group=comm_list_1[i+1].group;
+
+  }
+comm_list_1[slave_comm[9]-1].size=comm_list_2[slave_comm[6]].size;
+ comm_list_1[slave_comm[9]-1].myid=comm_list_2[slave_comm[6]].myid;
+comm_list_1[slave_comm[9]-1].work_time=comm_list_2[slave_comm[6]].work_time;
+ comm_list_1[slave_comm[9]-1].work_status=comm_list_2[slave_comm[6]].work_status;
+comm_list_1[slave_comm[9]-1].group=comm_list_2[slave_comm[6]].group;
+for(i=slave_comm[6];i<slave_comm[12]-1;i++)
+  {
+          comm_list_2[i].size=comm_list_2[i+1].size;
+	   comm_list_2[i].myid=comm_list_2[i+1].myid;
+	   comm_list_2[i].work_time=comm_list_2[i+1].work_time;
+	   comm_list_2[i].work_status=comm_list_2[i+1].work_status;
+	             comm_list_2[i].group=comm_list_2[i+1].group;
+
+
+  }
+        comm_list_2[slave_comm[12]-1].size=t;
+	  comm_list_2[slave_comm[12]-1].myid=g;
+	  comm_list_2[slave_comm[12]-1].work_time=w;
+	  comm_list_2[slave_comm[12]-1].work_status=s;
+        comm_list_2[slave_comm[12]-1].group=c;
+
+
+
+}
+if(slave_comm[3]!=0&&slave_comm[6]==0)
+{
+   t=comm_list_1[slave_comm[3]].size;
+	   g=comm_list_1[slave_comm[3]].myid;
+	   w=comm_list_1[slave_comm[3]].work_time;
+	   s=	comm_list_1[slave_comm[3]].work_status;
+          c=comm_list_1[slave_comm[3]].group;
+
+for(i=slave_comm[3];i<slave_comm[9]-1;i++)
+  {
+          comm_list_1[i].size=comm_list_1[i+1].size;
+	   comm_list_1[i].myid=comm_list_1[i+1].myid;
+	   comm_list_1[i].work_time=comm_list_1[i+1].work_time;
+	   comm_list_1[i].work_status=comm_list_1[i+1].work_status;
+          comm_list_1[i].group=comm_list_1[i+1].group;
+
+  }
+comm_list_1[slave_comm[9]-1].size=t;
+ comm_list_1[slave_comm[9]-1].myid=g;
+comm_list_1[slave_comm[9]-1].work_time=w;
+ comm_list_1[slave_comm[9]-1].work_status=s;
+comm_list_1[slave_comm[9]-1].group=c;
+
+}
+if(slave_comm[3]==0&&slave_comm[6]!=0)
+{
+
+          t=comm_list_1[slave_comm[6]].size;
+	   g=comm_list_1[slave_comm[6]].myid;
+	   w=comm_list_1[slave_comm[6]].work_time;
+	   s=	comm_list_1[slave_comm[6]].work_status;
+          c=comm_list_1[slave_comm[6]].group;
+
+for(i=slave_comm[6];i<slave_comm[12]-1;i++)
+  {
+          comm_list_2[i].size=comm_list_2[i+1].size;
+	   comm_list_2[i].myid=comm_list_2[i+1].myid;
+	   comm_list_2[i].work_time=comm_list_2[i+1].work_time;
+	   comm_list_2[i].work_status=comm_list_2[i+1].work_status;
+	             comm_list_2[i].group=comm_list_2[i+1].group;
+
+
+  }
+        comm_list_2[slave_comm[12]-1].size=t;
+	  comm_list_2[slave_comm[12]-1].myid=g;
+	  comm_list_2[slave_comm[12]-1].work_time=w;
+	  comm_list_2[slave_comm[12]-1].work_status=s;
+        comm_list_2[slave_comm[12]-1].group=c;
+
+
+
+}
+}
+}
+
+}
+
+u8 computer_gonglu(status_list_node *comm_list_1,status_list_node *comm_list_2,u8 *slave_comm)
+{
+u16 i;
+
+{
+		
+gonglvyinshu();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
+
+if(gonglvshishu<93&&L_C_flag==1)
+ {
+if(slave_comm[0]>0)
+      {
+      if(wugongkvar>=20)
+      	{
+for(i=slave_comm[3];i<=slave_comm[9]-1;i++)
+if(comm_list_1[i].work_status==0)
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,1,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,1,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,1,comm_list_1[i].work_time,comm_list_1[i].group);
+change_Queue(1,20,comm_list_1,comm_list_2,slave_comm);
+return 0 ;
+
+		}
+}
+
+
+{
+for(i=slave_comm[6];i<=slave_comm[12]-1;i++)
+if(comm_list_2[i].work_status==0)
+{
+
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,1,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,1,CONTROL);
+
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,1,comm_list_2[i].work_time,comm_list_2[i].group);
+change_Queue(1,20,comm_list_1,comm_list_2,slave_comm);
+
+return 0 ;
+
+		}
+}
+
+}
+      	}
+
+
+	  if(wugongkvar>=10)
+{
+for(i=slave_comm[2];i<=slave_comm[8]-1;i++)
+if(comm_list_1[i].work_status==0)
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,1,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,1,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,1,comm_list_1[i].work_time,comm_list_1[i].group);
+change_Queue(1,10,comm_list_1,comm_list_2,slave_comm);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[5];i<=slave_comm[11]-1;i++)
+if(comm_list_2[i].work_status==0)
+{
+
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,1,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,1,CONTROL);
+
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,1,comm_list_2[i].work_time,comm_list_2[i].group);
+change_Queue(1,10,comm_list_1,comm_list_2,slave_comm);
+return 0 ;
+
+		}
+}
+
+}
+
+
+	  }
+
+	  if(wugongkvar>=5)
+
+{
+for(i=slave_comm[1];i<=slave_comm[7]-1;i++)
+if(comm_list_1[i].work_status==0)
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,1,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,1,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,1,comm_list_1[i].work_time,comm_list_1[i].group);
+change_Queue(1,5,comm_list_1,comm_list_2,slave_comm);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[4];i<=slave_comm[10]-1;i++)
+if(comm_list_2[i].work_status==0)
+{
+
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,1,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,1,CONTROL);
+
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,1,comm_list_2[i].work_time,comm_list_2[i].group);
+change_Queue(1,5,comm_list_1,comm_list_2,slave_comm);
+return 0 ;
+
+		}
+}
+
+}
+
+      	}
+
+
+
+
+      
+}
+ }
+
+if(gonglvshishu>=94&&L_C_flag==1)
+   
+{
+if(slave_comm[0]>0)
+      {
+{
+for(i=slave_comm[1];i<=slave_comm[7]-1;i++)
+if(comm_list_1[i].work_status==1)
+
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[4];i<=slave_comm[10]-1;i++)
+if(comm_list_2[i].work_status==1)
+{
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+return 0 ;
+
+		}
+}
+}
+
+}
+
+
+
+
+{
+for(i=slave_comm[2];i<=slave_comm[8]-1;i++)
+if(comm_list_1[i].work_status==1)
+
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[5];i<=slave_comm[11]-1;i++)
+if(comm_list_2[i].work_status==1)
+{
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+return 0 ;
+
+		}
+}
+}
+}
+
+{
+for(i=slave_comm[3];i<=slave_comm[9]-1;i++)
+if(comm_list_1[i].work_status==1)
+
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[6];i<=slave_comm[12]-1;i++)
+if(comm_list_2[i].work_status==1)
+{
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+return 0 ;
+
+		}
+}
+}
+}
+
+
+       }
+ }
+
+
+if(L_C_flag==0)
+{
+if(slave_comm[0]>0)
+      {
+{
+for(i=slave_comm[3];i<=slave_comm[9]-1;i++)
+if(comm_list_1[i].work_status==1)
+
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[6];i<=slave_comm[12]-1;i++)
+if(comm_list_2[i].work_status==1)
+{
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+return 0 ;
+
+		}
+}
+}
+}
+
+
+
+{
+for(i=slave_comm[2];i<=slave_comm[8]-1;i++)
+if(comm_list_1[i].work_status==1)
+
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[5];i<=slave_comm[11]-1;i++)
+if(comm_list_2[i].work_status==1)
+{
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+return 0 ;
+
+		}
+}
+}
+}
+
+{
+for(i=slave_comm[1];i<=slave_comm[7]-1;i++)
+if(comm_list_1[i].work_status==1)
+
+{
+if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+return 0 ;
+
+		}
+}
+
+{
+for(i=slave_comm[4];i<=slave_comm[10]-1;i++)
+if(comm_list_2[i].work_status==1)
+{
+if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,0,CONTROL);
+else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
+		{
+set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+return 0 ;
+
+		}
+}
+}
+
+}
+
+
+       }
+
+}
+}
+return 0;
+
+}
 
 

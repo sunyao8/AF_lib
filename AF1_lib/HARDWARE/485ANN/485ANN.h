@@ -78,7 +78,8 @@
   u8 myid;      //本电容箱ID号
   u8 size;      //容量单位千法
   u8 work_status;    //工作状态 1 为投入工作；0 为没有工作
-  u8 work_time;     //工作时间   
+  u8 work_time;     //工作时间  
+  u8 group;
 }status_list_node;
 
 
@@ -132,15 +133,10 @@ void rs485_trans_status(u8 *);
 void status_trans_rs485(status_box *);
 void set_now_mystatus(u8 ,u8 ,u8 ,u8,u8,u8,u8);
 void init_mystatus(u8 ,u8 ,u8,u8,u8,u8);
-void set_statuslist_1(u8,u8,u8,u8);
-void set_statuslist_2(u8,u8,u8,u8);
+void set_statuslist_1(u8,u8,u8,u8,u8,u8);
+void set_statuslist_2(u8,u8,u8,u8,u8,u8);
 void delay_time(u32);//本系统的延时函数，time*450ms
-u8 inquiry_slave_status(u8);//查询从机状态并保存到从机状态表中，参数id是要查询的从机号
-u16 power_computer(void);
-void offset_idlepower(void);
-void turn_power(status_list_node *,status_list_node *);
-void unload_power(status_list_node *,status_list_node *);
-void C_unload_power(status_list_node *, status_list_node *);
+u8 inquiry_slave_status(u8,u8);//查询从机状态并保存到从机状态表中，参数id是要查询的从机号
 void gonglvyinshu(void);
 void allphase(long *V,long *I);
 void temperature(void);   //电容器温度检测
@@ -160,6 +156,10 @@ void LIGHT(u8,u8);
 void scanf_slave_machine(void);
  void status_trans_rs485_dis(status_box *mystatus);//从机程序
  void status_trans_rs485_RT(void);//从机程序
+ void status_trans_rs485_scantask(status_box *mystatus);//从机程序
+void init_Queue(status_list_node *comm_list,u8 *slave_comm ,u8 group);
+void change_Queue(u8 list_flag,u8 Level, status_list_node *comm_list_1,status_list_node *comm_list_2,u8 *slave_comm);
+u8 computer_gonglu(status_list_node *comm_list_1,status_list_node *comm_list_2,u8 *slave_comm);
 
 //u8 sub_delaytime_15(u8);
 //u8 sub_delaytime_5(u8 );
