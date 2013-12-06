@@ -156,6 +156,7 @@ void LIGHT(u8,u8);
 void scanf_slave_machine(void);
  void status_trans_rs485_dis(status_box *mystatus);//从机程序
  void status_trans_rs485_RT(void);//从机程序
+  void status_trans_rs485_comm_RT(void);//从机程序
  void status_trans_rs485_scantask(status_box *mystatus);//从机程序
 void init_Queue(status_list_node *comm_list,u8 *slave_comm ,u8 group);
 void change_Queue(u8 list_flag,u8 Level, status_list_node *comm_list_1,status_list_node *comm_list_2,u8 *slave_comm);

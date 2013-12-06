@@ -86,7 +86,7 @@ extern box mybox;
   
 extern  u16  dog_clock;
 
-extern OS_EVENT * RS485_MBOX,*RS485_STUTAS_MBOX;			//	rs485邮箱信号量
+extern OS_EVENT * RS485_MBOX,*RS485_STUTAS_MBOX,* RS485_RT;			//	rs485邮箱信号量
 
 extern OS_EVENT *Heartbeat;			 //心跳信号量
 extern OS_EVENT *master_led_task;
@@ -118,6 +118,7 @@ extern u8 slave[33];
 
 extern u16 m1_opentime,m2_opentime,m1_closetime,m2_closetime;
 extern u8 true_worktime1_flag,true_worktime2_flag;
+extern u8 RT_FLAG;
 
 //接收缓存区
 
@@ -125,7 +126,7 @@ extern u8 true_worktime1_flag,true_worktime2_flag;
 
 
 u8 led_lock=0;
-u8 init=1;
+u8 init=20;
 u8 auto_on=1;
 int slave_control(u8,u8);
 void EXTI_Configuration(void);//初始化函数
@@ -143,7 +144,7 @@ int main(void)
  {	 
   
 	 
-	
+	u8 i;
 	delay_init();	    	 //延时函数初始化	  
 	NVIC_Configuration(); 	 //设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 // 	LED_Init();			     //LED端口初始化
@@ -159,8 +160,8 @@ int main(void)
 	TIM4_Int_Init(9999*2,7199);//10Khz的计数频率，计数10K次为1000ms 
 	 initmybox();
 	 init_mystatus(SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
-	 slave[0]=0;
 EXTI_Configuration();//初始化函数
+for(i=0;i<30;i++)slave[i]=0;
 
 	OSInit();  	 			//初始化UCOSII
 			  
@@ -176,6 +177,7 @@ void start_task(void *pdata)
 	 RS485_MBOX=OSMboxCreate((void*)0);
 	 RS485_STUTAS_MBOX=OSMboxCreate((void*)0);
 	 scan_slave=OSSemCreate(0);
+	 RS485_RT=OSMboxCreate((void*)0);
 	OSStatInit();					//初始化统计任务.这里会延时1秒钟左右	
  	OS_ENTER_CRITICAL();			//进入临界区(无法被中断打断)    			   
 	OSTaskCreate(master_task,(void *)0,(OS_STK*)&MASTER_TASK_STK[MASTER_STK_SIZE-1],MASTER_TASK_PRIO);	 				   
@@ -217,7 +219,6 @@ mybox.myid=AT24CXX_ReadOneByte(0x0010);
  /**************主机任务**********************/
   void master_task(void *pdata)	  //主机任务
   {	  OS_CPU_SR cpu_sr=0;
-	  u32 i;
 	  // u8 *msg,err;
 	  u8 try_cont=0;
    while(1)
@@ -226,12 +227,13 @@ mybox.myid=AT24CXX_ReadOneByte(0x0010);
      {	
      hguestnum=111;
 	OSSemPost(scan_slave);
-	if(init==1)
-		{
-	   scanf_slave_machine();
-		  	   init=0;
-		}
-	  
+	
+  if(init!=0) {init--;order_trans_rs485(mybox.myid,0,1,1,0,CONTROL);order_trans_rs485(mybox.myid,0,1,2,0,CONTROL);}
+if(init==1)
+{
+RT_FLAG=0;
+init=0;
+}
 	  computer_gonglu(system_status_list_1,system_status_list_2,slave);
 
 	   delay_time(1);
@@ -257,7 +259,7 @@ void myled_task(void *pdata)
 {
 while(1)
 {
- 	temperature();
+ 	//temperature();
  key_idset();//按键与显示功能
   LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//刷指示灯，如果显示器有旁路电容滤波 可以删除
         
@@ -330,26 +332,22 @@ int slave_control(u8 i,u8 j)//给下下位机放指令
  {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
  }
  if(i==1&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
  }
  if(i==2&&j==1)
  	{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
 
  }
  if(i==2&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
 
  }
 	return 1;
@@ -357,13 +355,11 @@ int slave_control(u8 i,u8 j)//给下下位机放指令
 if(mybox.send==2)//查看从机状态
  {
   status_trans_rs485(&mystatus);
- led_lock=0;//操作完成开锁
 return 2;
  }
 if(mybox.send==3&&auto_on==1)//查看从机状态
 {
   status_trans_rs485_dis(&mystatus);
- led_lock=0;//操作完成开锁
 return 2;
  }
 if(mybox.send==4&&auto_on==1)//初始投变比时使用，保证能投出去，带反馈机制
@@ -373,151 +369,68 @@ if(mybox.send==4&&auto_on==1)//初始投变比时使用，保证能投出去，带反馈机制
  {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
  }
  if(i==1&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
  }
  if(i==2&&j==1)
  	{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
 
  }
  if(i==2&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
       LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	  led_lock=0; //操作完成开锁
 
  }
    	}
  status_trans_rs485_RT();//从机程序
- led_lock=0;//操作完成开锁
 return 2;
  }
 
- if(mybox.send==ALL_NODE_LCD_UNLOCK) //打开刷新led屏幕
- {
- led_lock=0;
- return 3;
- }
- if(mybox.send==ALL_NODE_LCD_LOCK) //关闭刷新led屏幕
- {
-  led_lock=1;
- return 4;
- }
-  if(mybox.send==IDLE_NODE_LCD_LOCK) //如果有空闲电容器关闭刷新led屏幕
- {
- if(mystatus.work_status[0]==0||mystatus.work_status[1]==0){led_lock=1;return 4;}
- }
- if(mybox.send==BUSY_NODE_LCD_LCOK) //如果有忙碌电容器关闭刷新led屏幕
- {
- if(mystatus.work_status[0]==1||mystatus.work_status[1]==1){led_lock=1;return 4;}
- }
  
-if((mybox.send-mybox.myid)==NODE_LCD_LOCK_BASE)
-{
-led_lock=1;
-return 4;
-}
 if(mybox.send==5)//查看从机状态
  {
   status_trans_rs485_scantask(&mystatus);
 return 5;
  }
+if(mybox.send==6&&auto_on==1)//查看从机状态
+ {
+ { 	 // LED1=!LED1;
+ if(i==1&&j==1)
+ {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+ }
+ if(i==1&&j==0)
+ 	{GPIO_SetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+ }
+ if(i==2&&j==1)
+ 	{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
 
-return 6; //操作失败
-}
-/*
-void sub_machine1_close_task(void *pdate)//从机任务
-{   u8 err;
-    // u16 time=0;
-    while(1)
-    	{
-        OSSemPend(sub_machine1_close,0,&err);
-	set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-//	if(m2_close==1)
-//    	{ if(m2_closetime<15)
-//    	         {  
-//                  delay_ms(1000*(15-m2_closetime)+1);
-//				time=1000*(15-m2_closetime)+1;  
-//	          }
-//
-//	}
-//	   
-    //      sub_delaytime_15(mybox.send-Sub_Order);
-			//	time=0;
-	GPIO_ResetBits(GPIOA,GPIO_Pin_0);
-	true_worktime1_flag=1;
-             LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-                  led_lock=0;//操作完成开锁
+ }
+ if(i==2&&j==0)
+ 	{GPIO_SetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
 
-         }
+ }
+   	}
+  status_trans_rs485_comm_RT();
+	return 6;
+ }
 
-}
-void sub_machine1_open_task(void *pdate)//从机任务
-{   u8 err;
-    // u16 time=0;
-    while(1)
-    	{
-        OSSemPend(sub_machine1_open,0,&err);
-	GPIO_SetBits(GPIOA,GPIO_Pin_0);
-	true_worktime1_flag=0;
-	LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-	led_lock=0;//操作完成开锁
-          {  
-		 delay_ms(6000);
-		 delay_ms(6000);		 
-	set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-
-         }
-          	 	
-	}
-
+return 7; //操作失败
 }
 
-
-void sub_machine2_close_task(void *pdate)//从机任务
-{   u8 err;
-    while(1)
-    	{
-        OSSemPend(sub_machine2_close,0,&err);
-set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);        
-	GPIO_ResetBits(GPIOA,GPIO_Pin_8);
-	true_worktime2_flag=1;
-        LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-		led_lock=0;//操作完成开锁
-
-	}
-
-}
-
-
-
-void sub_machine2_open_task(void *pdate)//从机任务
-{   u8 err;
-    while(1)
-    	{
-        OSSemPend(sub_machine2_open,0,&err);
-//          sub_delaytime_5(mybox.send-Sub_Order);
-	GPIO_SetBits(GPIOA,GPIO_Pin_8);
-	true_worktime2_flag=0;
-	LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-           led_lock=0;//操作完成开锁
-		{
-		delay_ms(6000);
-		delay_ms(6000);
-	set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);				
-	        }
-	}
-
-}
-*/
  void scanf_task(void *pdate)
  	{ u8 err;
 while(1)
