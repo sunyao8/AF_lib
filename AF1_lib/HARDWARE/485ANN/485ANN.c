@@ -73,7 +73,7 @@ long lBUFIN_V[NPT];         /* Complex input vector */
 long lBUFOUT_V[FFT_NM];        /* Complex output vector */
 long lBUFIN_I[NPT];         /* Complex input vector */
 long lBUFOUT_I[FFT_NM];        /* Complex output vector */
-double angle[3]; 
+double angle[4]; 
 
 
 
@@ -87,7 +87,7 @@ extern u8 id_num;
 extern u8 grafnum,tempshuzhi,gonglvshishu;
 extern u16 dianya_zhi,	wugongkvar,k;
 extern u32	dianliuzhi;
-s8 L_C_flag;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
+s8 L_C_flag=1;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
 /*****************************************************/
  void TIM4_Int_Init(u16 arr,u16 psc)
 {
@@ -133,7 +133,9 @@ s8 L_C_flag;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
 			}
 			if(dog_clock>0){dog_clock--;cont=1;}
 		 }
-
+	
+/*
+{
 	if(mybox.master==1)	
 				{
                                    scan_time++;
@@ -142,7 +144,6 @@ s8 L_C_flag;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
 			       }
 	
 	
-//		 if (mystatus.work_status[0]==1&&true_worktime1_flag==1)  //¹¤×÷Ê±¼äµÄ¼ÆÊ±
 		 		 if (mystatus.work_status[0]==1)  //¹¤×÷Ê±¼äµÄ¼ÆÊ±
 		    {  
 		        life_time_1++;
@@ -180,8 +181,8 @@ s8 L_C_flag;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
 			if(idle_time==65535)idle_time=0;
 			}
 
-		
-
+}	
+*/
 
 	}
    	OSIntExit();  
@@ -279,6 +280,7 @@ if(tx_r485[8]==CPT_LL)
   dianliuzhi=comp_16(tx_r485[3],tx_r485[4]);
   wugongkvar=comp_16(tx_r485[5],tx_r485[6]);
   gonglvshishu=tx_r485[7];
+  L_C_flag=tx_r485[9];
 return 0;
 
 }
@@ -336,9 +338,10 @@ if(ctr==CPT_LL )
 	rs485buf[5]=(wugongkvar& (uint16_t)0x00FF);
 	rs485buf[6]=((wugongkvar& (uint16_t)0xFF00)>>8);
 	rs485buf[7]=gonglvshishu;	
-	rs485buf[8]=ctr;	
-	rs485buf[9]='*';//Ð­ÒéÎ²
-	RS485_Send_Data(rs485buf,10);//·¢ËÍ5¸ö×Ö½Ú
+	rs485buf[8]=ctr;
+	rs485buf[9]=L_C_flag;	
+	rs485buf[10]='*';//Ð­ÒéÎ²
+	RS485_Send_Data(rs485buf,11);//·¢ËÍ5¸ö×Ö½Ú
 	  // 	if(destination==source){mybox.send=send;slave_control(relay, message);}//Èç¹ûÐÅÏ¢·¢¸øµÄ×Ô¼º
 
     	}
@@ -853,7 +856,7 @@ void gonglvyinshu()
 	        u16 i=0,flag_v=5,flag_i=5;
 	         int32_t lX=0,lY=0;
 
-
+static u8 flag_phase=0;
 
 		id_num=AT24CXX_ReadOneByte(0x0010);
 
@@ -865,6 +868,7 @@ void gonglvyinshu()
 	  }	
 */
 //if(adc_imax>=1750)
+
         	{
         for(i=0;i<NPT;i++)
         	{
@@ -903,6 +907,15 @@ void gonglvyinshu()
                  dianliuzhi= (u32)(Mag_i* 65536)*K_BT/100;
                    }
 				angle[1]=atan2(lY,lX);
+/************************************phase*******************/
+				angle[3]=((angle[1]-angle[0])*360)/PI2;
+                         	{
+				if((angle[3]>0.0&&angle[3]<180.0)||(angle[3]>-360.0&&angle[3]<-180.0))flag_phase=1;
+				
+				if((angle[3]>180.0&&angle[3]<360.0)||(angle[3]>-180.0&&angle[3]<-0.0))flag_phase=0;
+
+				}
+/************************************phase_end*******************/
 				
 				angle[2]=((angle[1]-angle[0])*360)/PI2-90;
 				if(angle[2]>0.0)
@@ -939,7 +952,10 @@ void gonglvyinshu()
 				  }	
 		
 			}
-	
+				
+if(flag_phase==1){if(L_C_flag==1)L_C_flag=0;if(L_C_flag==0)L_C_flag=1;}
+tempshuzhi=L_C_flag;
+
 
 			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*abs(cos((angle[1]-angle[0]))*100))/100000);
 			wugong_95= (uint16_t)((17.32*dianliuzhi*dianya_zhi*31)/100000);//¹¦ÂÊÒòËØÔÚ0.95Ê±µÄ£¬ÎÞ¹¦¹¦Â
@@ -1810,6 +1826,28 @@ var=var+(50*dianya_zhi*dianya_zhi)/450/450;
 
       
 }
+/**************************************Í¶Ö÷»ú**/
+{
+if(mystatus.work_status[0]==0)
+{
+GPIO_ResetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  RT_FLAG=1;
+var=var+(10*mystatus.work_status[0]*dianya_zhi*dianya_zhi)/450/450;
+
+ }
+
+if(mystatus.work_status[1]==0)
+{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  	  RT_FLAG=1;
+var=var+(10*mystatus.work_status[1]*dianya_zhi*dianya_zhi)/450/450;
+
+ }
+}
+/**************************************Í¶Ö÷»úend**/
 
 }
 
@@ -1827,6 +1865,26 @@ if(abs(abs(gl[0]-gl[1])*TR[i]-var)<=min){min=abs(abs(gl[0]-gl[1])*TR[i]-var);K_B
 
 }
 RT_FLAG=2;
+/**************************************ÇÐÖ÷»ú**/
+{
+ 	{
+ 	GPIO_SetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+
+ }
+delay_us(100000);
+
+{GPIO_SetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+
+ }
+delay_us(100000);
+
+}
+/**************************************ÇÐÖ÷»ú**/
+
 order_trans_rs485(mybox.myid,0,1,1,0,CONTROL);
 delay_us(1000000);
 order_trans_rs485(mybox.myid,0,1,2,0,CONTROL);
@@ -1835,12 +1893,12 @@ return 0;
 
 
 }
-tempshuzhi=K_BT;
+//tempshuzhi=K_BT;
 if(RT_FLAG==2)
 {
 gonglvyinshu();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
 
-if(gonglvshishu<93&&L_C_flag==1)
+if(gonglvshishu<90&&L_C_flag==1)
  {
 if(slave_comm[0]>0)
       {
@@ -1953,16 +2011,57 @@ return 0 ;
 
       	}
 
-
-
-
       
 }
+/**************************************Í¶Ö÷»ú**/
+{
+if(wugongkvar>=mystatus.size[0])
+if(mystatus.work_status[0]==0)
+{
+GPIO_ResetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  return 0 ;
  }
 
-if(gonglvshishu>=94&&L_C_flag==1)
+if(wugongkvar>=mystatus.size[1])
+if(mystatus.work_status[1]==0)
+{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  return 0 ;
+
+ }
+}
+/**************************************Í¶Ö÷»úend**/
+
+ }
+
+if(gonglvshishu>=95&&L_C_flag==1)
    
 {
+
+/**************************************ÇÐÖ÷»ú**/
+{
+if(mystatus.work_status[0]==1)
+ 	{
+ 	GPIO_SetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  	  return 0 ;
+
+ }
+if(mystatus.work_status[1]==1)
+
+{GPIO_SetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  return 0 ;
+
+ }
+}
+/**************************************ÇÐÖ÷»ú**/
+
 if(slave_comm[0]>0)
       {
 {
@@ -2063,6 +2162,27 @@ return 0 ;
 
 if(L_C_flag==0)
 {
+/**************************************ÇÐÖ÷»ú**/
+{
+if(mystatus.work_status[0]==1)
+ 	{
+ 	GPIO_SetBits(GPIOA,GPIO_Pin_0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  	  return 0 ;
+
+ }
+if(mystatus.work_status[1]==1)
+
+{GPIO_SetBits(GPIOA,GPIO_Pin_8);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+	  return 0 ;
+
+ }
+}
+/**************************************ÇÐÖ÷»ú**/
+
 if(slave_comm[0]>0)
       {
 {

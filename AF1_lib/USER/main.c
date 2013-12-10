@@ -220,7 +220,6 @@ mybox.myid=AT24CXX_ReadOneByte(0x0010);
   void master_task(void *pdata)	  //主机任务
   {	  OS_CPU_SR cpu_sr=0;
 	  // u8 *msg,err;
-	  u8 try_cont=0;
    while(1)
    	{
   	if(mybox.master==1)
