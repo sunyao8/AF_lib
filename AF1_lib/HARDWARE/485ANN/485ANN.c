@@ -1102,7 +1102,7 @@ u8 *msg;
 
 
 {
-for(i=1;i<=32;i++)
+for(i=1;i<=10;i++)
 	{  
 
 for(g=1;g<=slave[0];g++)
@@ -2014,6 +2014,7 @@ return 0 ;
       
 }
 /**************************************投主机**/
+if(KEY1==1)//必须是在自动条件下
 {
 if(wugongkvar>=mystatus.size[0])
 if(mystatus.work_status[0]==0)
@@ -2042,6 +2043,7 @@ if(gonglvshishu>=95&&L_C_flag==1)
 {
 
 /**************************************切主机**/
+if(KEY1==1)//必须是在自动条件下
 {
 if(mystatus.work_status[0]==1)
  	{
@@ -2163,6 +2165,7 @@ return 0 ;
 if(L_C_flag==0)
 {
 /**************************************切主机**/
+if(KEY1==1)//必须是在自动条件下
 {
 if(mystatus.work_status[0]==1)
  	{

@@ -282,12 +282,10 @@ void SETID_task(void *pdata)
                                       mybox.master=2;
 			             OS_ENTER_CRITICAL();
                       		OSTaskSuspend(MASTER_TASK_PRIO );//挂起主机任状态.
-                      		OSTaskSuspend( MYLED_TASK_PRIO);
                                    OSTaskSuspend(Receive_TASK_PRIO);
 						OS_EXIT_CRITICAL();
 					HT595_Send_Byte(YELLOW_YELLOW|background_light_on);
-                                      myled(); 									  
-								   
+			delay_ms(100);
 		       }
                else if(id_num<=32&&id_num>=1)
                	{ 
