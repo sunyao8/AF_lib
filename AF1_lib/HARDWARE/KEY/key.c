@@ -12,6 +12,7 @@ u8 id_num=0;
 u8 grafnum,tempshuzhi,vernum=101,hguestnum=222,gonglvshishu=0;
 u16 dianya_zhi=0,wugongkvar=0;
 u32	dianliuzhi=0;
+ u8 ligt_time=3;
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序为控制器设计，未经许可，不得复制外传
 //实验板栋达电子V3.0-1
@@ -32,6 +33,7 @@ void KEY_Init(void)
 	GPIOA->ODR|=1<11;		// 上拉
 	GPIOA->ODR|=1<12;		  //上拉
 } 
+extern status_box mystatus;
 
 void key_idset(void)
 {
@@ -39,8 +41,11 @@ void key_idset(void)
 	u8 h;
 	if((KEY0==0)&&m)
 	{
-           	  // delay_us(10000);
-	   m=0;
+		{
+	LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+           ligt_time=3;	  // delay_us(10000);
+	   }
+	m=0;
 	 while(KEY0==0)
 	   	{
 	   	   delay_us(3000);//3000
@@ -96,7 +101,8 @@ void key_idset(void)
 					 	}
 						if(zhongduan_flag==0)
 				      	{
-					  		id_num++;
+                                                ligt_time=3;
+							id_num++;
 					  		if(id_num>32)id_num=0;
 							Clera_lcd();
 	   						Graf_setid(id_num);

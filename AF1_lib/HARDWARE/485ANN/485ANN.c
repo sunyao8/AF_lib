@@ -87,8 +87,12 @@ extern u8 id_num;
 extern u8 grafnum,tempshuzhi,gonglvshishu;
 extern u16 dianya_zhi,	wugongkvar,k;
 extern u32	dianliuzhi;
+
 s8 L_C_flag=1;//感性容性标准变量
 /*****************************************************/
+extern status_box mystatus;
+extern u8 ligt_time;
+
  void TIM4_Int_Init(u16 arr,u16 psc)
 {
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
@@ -133,7 +137,10 @@ s8 L_C_flag=1;//感性容性标准变量
 			}
 			if(dog_clock>0){dog_clock--;cont=1;}
 		 }
-	
+	if(ligt_time>0)ligt_time--;
+
+	if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+
 /*
 {
 	if(mybox.master==1)	
@@ -1012,13 +1019,24 @@ void temperature()   //电容器温度检测
 
 }
 
-void LIGHT(u8 status_1,u8 status_2)
+void LIGHT(u8 status_1,u8 status_2,u8 background )
+{
+if(background==1)
 {
 if(status_1==0&&status_2==1)HT595_Send_Byte((GREEN_RED)|background_light_on);
 if(status_1==1&&status_2==0)HT595_Send_Byte((RED_GREEN)|background_light_on);
 if(status_1==0&&status_2==0)HT595_Send_Byte((GREEN_GREEN)|background_light_on);
 if(status_1==1&&status_2==1)HT595_Send_Byte((RED_RED)|background_light_on);
 if(status_1==2&&status_2==2)HT595_Send_Byte((YELLOW_YELLOW)|background_light_on);
+}
+if(background==0)
+{
+if(status_1==0&&status_2==1)HT595_Send_Byte((GREEN_RED));
+if(status_1==1&&status_2==0)HT595_Send_Byte((RED_GREEN));
+if(status_1==0&&status_2==0)HT595_Send_Byte((GREEN_GREEN));
+if(status_1==1&&status_2==1)HT595_Send_Byte((RED_RED));
+if(status_1==2&&status_2==2)HT595_Send_Byte((YELLOW_YELLOW));
+}
 
 }
 
@@ -1087,7 +1105,7 @@ void key_lcd()
 {
 key_idset();//按键与显示功能
 Alarm();//是否需要报警
- LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//刷指示灯，如果显示器有旁路电容滤波 可以删除
+// LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//刷指示灯，如果显示器有旁路电容滤波 可以删除
 }
 
 
@@ -1832,7 +1850,7 @@ if(mystatus.work_status[0]==0)
 {
 GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  RT_FLAG=1;
 var=var+(10*mystatus.work_status[0]*dianya_zhi*dianya_zhi)/450/450;
 
@@ -1841,7 +1859,7 @@ var=var+(10*mystatus.work_status[0]*dianya_zhi*dianya_zhi)/450/450;
 if(mystatus.work_status[1]==0)
 {GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  	  RT_FLAG=1;
 var=var+(10*mystatus.work_status[1]*dianya_zhi*dianya_zhi)/450/450;
 
@@ -1870,14 +1888,14 @@ RT_FLAG=2;
  	{
  	GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 
  }
 delay_us(100000);
 
 {GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 
  }
 delay_us(100000);
@@ -2021,7 +2039,7 @@ if(mystatus.work_status[0]==0)
 {
 GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  return 0 ;
  }
 
@@ -2029,7 +2047,7 @@ if(wugongkvar>=mystatus.size[1])
 if(mystatus.work_status[1]==0)
 {GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  return 0 ;
 
  }
@@ -2049,7 +2067,7 @@ if(mystatus.work_status[0]==1)
  	{
  	GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  	  return 0 ;
 
  }
@@ -2057,7 +2075,7 @@ if(mystatus.work_status[1]==1)
 
 {GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  return 0 ;
 
  }
@@ -2171,7 +2189,7 @@ if(mystatus.work_status[0]==1)
  	{
  	GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  	  return 0 ;
 
  }
@@ -2179,7 +2197,7 @@ if(mystatus.work_status[1]==1)
 
 {GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 	  return 0 ;
 
  }

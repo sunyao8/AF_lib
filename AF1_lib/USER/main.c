@@ -140,6 +140,8 @@ void EXTI_Configuration(void);//初始化函数
 #define WORK_TIME_1 0
 #define WORK_TIME_2	0
 /////////////////////////////////////////////
+extern u8 ligt_time;
+
 int main(void)
  {	 
   
@@ -260,7 +262,7 @@ while(1)
 {
  	//temperature();
  key_idset();//按键与显示功能
-  LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//刷指示灯，如果显示器有旁路电容滤波 可以删除
+ // LIGHT(mystatus.work_status[0],mystatus.work_status[1]);//刷指示灯，如果显示器有旁路电容滤波 可以删除
         
 delay_ms(100);
 }
@@ -328,23 +330,28 @@ int slave_control(u8 i,u8 j)//给下下位机放指令
  if(i==1&&j==1)
  {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+
  }
  if(i==1&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
  }
  if(i==2&&j==1)
  	{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 
  }
  if(i==2&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 
  }
 	return 1;
@@ -365,23 +372,27 @@ if(mybox.send==4&&auto_on==1)//初始投变比时使用，保证能投出去，带反馈机制
  if(i==1&&j==1)
  {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
  }
  if(i==1&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
  }
  if(i==2&&j==1)
  	{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 
  }
  if(i==2&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 
  }
    	}
@@ -401,23 +412,27 @@ if(mybox.send==6&&auto_on==1)//查看从机状态
  if(i==1&&j==1)
  {GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
  }
  if(i==1&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
  }
  if(i==2&&j==1)
  	{GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 
  }
  if(i==2&&j==0)
  	{GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+   if(ligt_time>0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      if(ligt_time==0)LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 
  }
    	}
@@ -495,8 +510,8 @@ if(KEY1==1&&auto_on==0)
 GPIO_SetBits(GPIOA,GPIO_Pin_8);
 mystatus.work_status[0]=0;
 mystatus.work_status[1]=0;
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+ligt_time=3;
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
  }
 
 if(KEY1==0&&auto_on==1&&first_sen==1)	
@@ -505,7 +520,8 @@ if(KEY1==0&&auto_on==1&&first_sen==1)
  auto_on=0;
 GPIO_ResetBits(GPIOA,GPIO_Pin_0);
 mystatus.work_status[0]=1;
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+ligt_time=3;
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
  }
 if(KEY1==0&&auto_on==1&&first_sen==2)
  	{
@@ -513,7 +529,8 @@ if(KEY1==0&&auto_on==1&&first_sen==2)
  	auto_on=0;
 GPIO_ResetBits(GPIOA,GPIO_Pin_8);
 mystatus.work_status[1]=1;
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1]);
+ligt_time=3;
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
 
  }
 
