@@ -502,7 +502,7 @@ static u8 first_sen=1;
   if(EXTI_GetITStatus(EXTI_Line12) != RESET)
 	
 	{
-
+delay_us(1000);
 if(KEY1==1&&auto_on==0)
  	{
 		  auto_on=1;

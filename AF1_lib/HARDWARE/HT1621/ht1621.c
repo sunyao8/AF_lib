@@ -13,6 +13,7 @@ u8 dotnum67Seg[]={0x0B,0x0F,0x0B,0x00,0x0D,0x0B,0x0F,0x09,0x0F,0x04,0x07,0x0D,0x
 
 extern s8 L_C_flag;//感性容性标准变量
 extern u8 auto_on;
+u8 ht1621_595=1;
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序为控制器设计，未经许可，不得复制外传
@@ -53,6 +54,9 @@ void HT1621_Init(void)
 void SendBit_1621(u8 data,u8 cnt)	 //data高cnt位写入HT1621,高位在前
 {
   u8 i;
+  if(ht1621_595==1)
+  	{
+  	ht1621_595=0;
   for(i=0;i<cnt;i++)
   {
    if((data&0x80)==0)DATA=0;
@@ -62,10 +66,16 @@ void SendBit_1621(u8 data,u8 cnt)	 //data高cnt位写入HT1621,高位在前
    WR=1;
    data<<=1;
   }
+   ht1621_595=1;
+
+}
 }
 void SendDataBit_1621(u8 data,u8 cnt)	 //data低cnt位写入HT1621,低位在前
 {
   u8 i;
+  if(ht1621_595==1)
+  	{
+  	  	ht1621_595=0;
   for(i=0;i<cnt;i++)
   {
    if((data&0x01)==0)DATA=0;
@@ -75,7 +85,11 @@ void SendDataBit_1621(u8 data,u8 cnt)	 //data低cnt位写入HT1621,低位在前
    WR=1;
    data>>=1;
   }
+    	ht1621_595=1;
+
+  	}
 }
+
 
 void SendCmd(u8 command)
 {
@@ -87,6 +101,10 @@ void SendCmd(u8 command)
 
 void Write_1621(u8 addr,u8 data)
 {
+//	SendCmd(LCDOFF);
+SendCmd(BIAS);			
+	SendCmd(SYSEN);
+	SendCmd(LCDON);
    CS=0;
    SendBit_1621(0xa0,3);
    SendBit_1621(addr<<2,6);
@@ -97,6 +115,10 @@ void Write_1621(u8 addr,u8 data)
 void WriteAll_1621(u8 addr,u8 *p,u8 cnt)
 {
    u8 i;
+   //	SendCmd(LCDOFF);
+   SendCmd(BIAS);			
+	SendCmd(SYSEN);
+	SendCmd(LCDON);
    CS=0;
    SendBit_1621(0xa0,3);
    SendBit_1621(addr<<2,6);
@@ -110,6 +132,10 @@ void WriteAll_1621(u8 addr,u8 *p,u8 cnt)
 void Clera_lcd(void)
 {
 	 u8 t;
+	// 	SendCmd(LCDOFF);
+	 SendCmd(BIAS);			
+	SendCmd(SYSEN);
+	SendCmd(LCDON);
 	 for(t=0;t<22;t++)
 	 {
 	   u8 i;
@@ -524,6 +550,9 @@ void Graf_setid(u8 idnum)
 void HT595_Send_Byte(u8 state)
 {                        
     u8 t; 
+	if(ht1621_595==1)
+		{
+	ht1621_595=0;
 		RCLK_595=0;		    
     for(t=0;t<8;t++)
     {    
@@ -539,4 +568,7 @@ void HT595_Send_Byte(u8 state)
 
 	delay_us(10);
 	RCLK_595=1;
+		ht1621_595=1;
+		}
 }
+
