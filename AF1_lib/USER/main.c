@@ -13,6 +13,10 @@
 #include "key.h"
 //32
 #include "lcd.h"//测试用
+#include "stm32f10x_iwdg.h"
+#include "stm32f10x_rcc.h"
+
+#include "wdg.h"
 /////////////////////////UCOSII任务设置///////////////////////////////////
 
 #define SETID_TASK_PRIO       			1 
@@ -133,8 +137,8 @@ void EXTI_Configuration(void);//初始化函数
 
 //#define ID  1
 
-#define SIZE_1 10
-#define SIZE_2 10
+#define SIZE_1 20
+#define SIZE_2 20
 #define WORK_STATUS_1	 0//0为没有工作  1为工作  2为坏掉，初始化为0
 #define WORK_STATUS_2    0 
 #define WORK_TIME_1 0
@@ -158,17 +162,20 @@ int main(void)
 	Adc_Init();
 /************************************/
 ///	uart_init(9600);LCD_Init();	                                                              //调试显示
-	RS485_Init(9600);	//初始化RS485
+RS485_Init(9600);	//初始化RS485
 	TIM4_Int_Init(9999*2,7199);//10Khz的计数频率，计数10K次为1000ms 
 	 initmybox();
 	 init_mystatus(SIZE_1,SIZE_2,WORK_STATUS_1,WORK_STATUS_2,WORK_TIME_1,WORK_TIME_2);
 EXTI_Configuration();//初始化函数
+IWDG_Init(6,625); 
+	 TIM3_Int_Init(9999,7199);//设置看门狗中断
 for(i=0;i<30;i++)slave[i]=0;
 
 	OSInit();  	 			//初始化UCOSII
 			  
  	OSTaskCreate(start_task,(void *)0,(OS_STK *)&START_TASK_STK[START_STK_SIZE-1],START_TASK_PRIO );//创建起始任务
-	OSStart();	    
+	OSStart();	 
+
 }							    
 //开始任务
 void start_task(void *pdata)
@@ -232,7 +239,7 @@ mybox.myid=AT24CXX_ReadOneByte(0x0010);
   if(init!=0) {init--;order_trans_rs485(mybox.myid,0,1,1,0,CONTROL);order_trans_rs485(mybox.myid,0,1,2,0,CONTROL);}
 if(init==1)
 {
-RT_FLAG=0;
+RT_FLAG=2;//自动设置变比RT_FLAG=0，非自动RT_FLAG=2
 init=0;
 }
 	  computer_gonglu(system_status_list_1,system_status_list_2,slave);

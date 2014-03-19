@@ -7,6 +7,8 @@
 #include "key.h"
 #include "math.h"
 #include "stm32_dsp.h"
+#include "stm32f10x_iwdg.h"
+#include "wdg.h"
 
 /***********************************************************************/
 #define CPT_LL                                                    '^'
@@ -69,6 +71,8 @@ u8 phase_zhi=0;
 #define NPT 512            /* NPT = No of FFT point*/
 #define FFT_NM NPT/2
 #define PI2  6.28318530717959
+#define TIME_TQ 7000
+
 long lBUFIN_V[NPT];         /* Complex input vector */
 long lBUFOUT_V[FFT_NM];        /* Complex output vector */
 long lBUFIN_I[NPT];         /* Complex input vector */
@@ -92,7 +96,6 @@ s8 L_C_flag=1;//¸ÐÐÔÈÝÐÔ±ê×¼±äÁ¿
 /*****************************************************/
 extern status_box mystatus;
 extern u8 ligt_time;
-
  void TIM4_Int_Init(u16 arr,u16 psc)
 {
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
@@ -195,6 +198,44 @@ extern u8 ligt_time;
    	OSIntExit();  
 }
 
+ void TIM3_Int_Init(u16 arr,u16 psc)
+{
+    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE); //Ê±ÖÓÊ¹ÄÜ
+	
+	//¶¨Ê±Æ÷TIM4³õÊ¼»¯
+	TIM_TimeBaseStructure.TIM_Period = arr; //ÉèÖÃÔÚÏÂÒ»¸ö¸üÐÂÊÂ¼þ×°Èë»î¶¯µÄ×Ô¶¯ÖØ×°ÔØ¼Ä´æÆ÷ÖÜÆÚµÄÖµ	
+	TIM_TimeBaseStructure.TIM_Prescaler =psc; //ÉèÖÃÓÃÀ´×÷ÎªTIMxÊ±ÖÓÆµÂÊ³ýÊýµÄÔ¤·ÖÆµÖµ
+	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; //ÉèÖÃÊ±ÖÓ·Ö¸î:TDTS = Tck_tim
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  //TIMÏòÉÏ¼ÆÊýÄ£Ê½
+	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure); //¸ù¾ÝÖ¸¶¨µÄ²ÎÊý³õÊ¼»¯TIMxµÄÊ±¼ä»ùÊýµ¥Î»
+ 
+	TIM_ITConfig(TIM3,TIM_IT_Update,ENABLE ); //Ê¹ÄÜÖ¸¶¨µÄTIM4ÖÐ¶Ï,ÔÊÐí¸üÐÂÖÐ¶Ï
+
+	//ÖÐ¶ÏÓÅÏÈ¼¶NVICÉèÖÃ
+	NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;  //TIM4ÖÐ¶Ï
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;  //ÏÈÕ¼ÓÅÏÈ¼¶0¼¶
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;  //´ÓÓÅÏÈ¼¶3¼¶
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; //IRQÍ¨µÀ±»Ê¹ÄÜ
+	NVIC_Init(&NVIC_InitStructure);  //³õÊ¼»¯NVIC¼Ä´æÆ÷
+
+
+	TIM_Cmd(TIM3, ENABLE);  //Ê¹ÄÜTIMx					 
+}
+ 
+ void TIM3_IRQHandler(void)   //TIM4ÖÐ¶Ï
+{	 
+	OSIntEnter();   
+	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)  //¼ì²éTIM4¸üÐÂÖÐ¶Ï·¢ÉúÓë·ñ
+		{	  
+		TIM_ClearITPendingBit(TIM3, TIM_IT_Update  );  //Çå³ýTIMx¸üÐÂÖÐ¶Ï±êÖ¾
+                     IWDG_Feed();
+
+	}
+   	OSIntExit();  
+}
 		void USART2_IRQHandler(void)
 {
  
@@ -207,17 +248,35 @@ extern u8 ligt_time;
 	{	 
 	 			 
 		 RS485_RX_BUF[RS485_RX_CNT++]=USART_ReceiveData(USART2); 	//¶ÁÈ¡½ÓÊÕµ½µÄÊý¾Ý
+
+/***************************************************************/			
 		if(RS485_RX_BUF[RS485_RX_CNT-1]=='&'){RS485_RX_BUF[0]='&'; RS485_RX_CNT=1;}
 		if(RS485_RX_BUF[RS485_RX_CNT-1]=='*')
-		{
+		{				
+		           RS485_RX_CNT=0;
+			if(RS485_RX_BUF[1]=='!'){OSMboxPost(RS485_RT,(void*)&RS485_RX_BUF);}
+
+		if(RS485_RX_BUF[1]=='#'){OSMboxPost(RS485_STUTAS_MBOX,(void*)&RS485_RX_BUF);}
+               else OSMboxPost(RS485_MBOX,(void*)&RS485_RX_BUF);
+
+		} 
+/************************·Ö²¹ÊÕ¼¯×´Ì¬Ð­Òé£¬¹²²¹ÏµÍ³ ÊÕµ½ºóÉáÆú ²¢Çå¿ÕRS485_RX_CNT ***********************************/		
+			if(RS485_RX_BUF[RS485_RX_CNT-1]=='%'){RS485_RX_BUF[0]='%'; RS485_RX_CNT=1;}
+		if(RS485_RX_BUF[RS485_RX_CNT-1]==')')
+	{
 				RS485_RX_CNT=0;
 
-								if(RS485_RX_BUF[1]=='!'){OSMboxPost(RS485_RT,(void*)&RS485_RX_BUF);}
-
-				if(RS485_RX_BUF[1]=='#'){OSMboxPost(RS485_STUTAS_MBOX,(void*)&RS485_RX_BUF);}
-				  else OSMboxPost(RS485_MBOX,(void*)&RS485_RX_BUF);
-		} 
-	}  	
+		}
+/*************************·Ö²¹ÏµÍ³ÏÔÊ¾Êý¾ÝÐ­Òé£¬¹²²¹ÏµÍ³ ÊÕµ½ºóÉáÆú ²¢Çå¿ÕRS485_RX_CNT **********************************/		
+		
+		if(RS485_RX_BUF[RS485_RX_CNT-1]=='$'){RS485_RX_BUF[0]='$'; RS485_RX_CNT=1;}
+		if(RS485_RX_BUF[RS485_RX_CNT-1]=='?')
+		{
+				RS485_RX_CNT=0;				
+		}
+/***********************************************************/		
+		
+		 }  	
 	#ifdef OS_TICKS_PER_SEC	 	//Èç¹ûÊ±ÖÓ½ÚÅÄÊý¶¨ÒåÁË,ËµÃ÷ÒªÊ¹ÓÃucosIIÁË.
 	OSIntExit();  											 
 #endif
@@ -910,8 +969,9 @@ static u8 flag_phase=0;
 				   {
                    X    = FFT_NM* ((float)lX) /32768;
                    Y    = FFT_NM* ((float)lY) /32768;
-                    Mag_i = sqrt(X*X + Y*Y)/FFT_NM/1.414;
-                 dianliuzhi= (u32)(Mag_i* 65536)*K_BT/100;
+            //        Mag_i = sqrt(X*X + Y*Y)/FFT_NM/1.414;
+                    Mag_i = sqrt(X*X + Y*Y)/FFT_NM/1.414/2.9;					
+                 dianliuzhi= (u32)(Mag_i* 65536)*K_BT/100;//(u32)(Mag_i* 65536)*K_BT/100;ÓÃÓÚ²âÊÔ±ä±È
                    }
 				angle[1]=atan2(lY,lX);
 /************************************phase*******************/
@@ -951,7 +1011,7 @@ static u8 flag_phase=0;
 
 				  }
 
-					if((angle[2]>-180.0&&angle[2]<=0.0))
+					if((angle[2]>-180.0&&angle[2]<0.0))
 					{
 			     gonglvshishu=(u8)abs(sin((angle[1]-angle[0]))*100-0.5);
 				 L_C_flag=0;
@@ -962,7 +1022,7 @@ static u8 flag_phase=0;
 				
 if(flag_phase==1){if(L_C_flag==1)L_C_flag=0;if(L_C_flag==0)L_C_flag=1;}
 tempshuzhi=L_C_flag;
-
+if(dianliuzhi<1)gonglvshishu=100;
 
 			 wugongkvar=(uint16_t)((1.732*dianliuzhi*dianya_zhi*abs(cos((angle[1]-angle[0]))*100))/100000);
 			wugong_95= (uint16_t)((17.32*dianliuzhi*dianya_zhi*31)/100000);//¹¦ÂÊÒòËØÔÚ0.95Ê±µÄ£¬ÎÞ¹¦¹¦Â
@@ -1702,6 +1762,7 @@ u8 computer_gonglu(status_list_node *comm_list_1,status_list_node *comm_list_2,u
 u16 i;
 s32 gl[2];
 static u16 var=0;
+static u8 warning_flag=0;
 u16 min;
 u16 TR[]={4,5,6,8,10,12,16,20,24,30,40,50,60,80,100,120};
 
@@ -1850,7 +1911,7 @@ if(mystatus.work_status[0]==0)
 {
 GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 	  RT_FLAG=1;
 var=var+(10*mystatus.work_status[0]*dianya_zhi*dianya_zhi)/450/450;
 
@@ -1859,7 +1920,7 @@ var=var+(10*mystatus.work_status[0]*dianya_zhi*dianya_zhi)/450/450;
 if(mystatus.work_status[1]==0)
 {GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
 	  	  RT_FLAG=1;
 var=var+(10*mystatus.work_status[1]*dianya_zhi*dianya_zhi)/450/450;
 
@@ -1912,10 +1973,52 @@ return 0;
 
 }
 //tempshuzhi=K_BT;
+K_BT=TR[15];//Ð´ËÀ±ä±È´¦£¬ÓÃÓÚ·Ç×Ô¶¯ÅÐ¶Ï±ä±È£¬Èç¹û²ÉÓÃ×Ô¶¯»ñÈ¡±ä±ÈÐèÒª×¢µô¸Ã¾ä»°
 if(RT_FLAG==2)
 {
 gonglvyinshu();//¼ÆËã¹¦ÂÊ£¬µçÑ¹µçÁ÷ÓëÏÔÊ¾°´¼ü·Ö¿ª
 
+/**************************************¹ýÑ¹±£»¤**/
+if((dianya_zhi>420||dianya_zhi<330))
+{
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],2,mystatus.work_status[1],0,mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],2,mystatus.work_time[0],0);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+
+}
+
+if((dianya_zhi>420||dianya_zhi<330)&&warning_flag==0)
+{
+{
+ 	{
+ 	GPIO_SetBits(GPIOA,GPIO_Pin_0);
+
+ }
+delay_ms(2000);
+
+{GPIO_SetBits(GPIOA,GPIO_Pin_8);
+
+ }
+delay_ms(2000);
+
+}
+order_trans_rs485(mybox.myid,0,1,1,0,CONTROL);
+delay_ms(5000);
+order_trans_rs485(mybox.myid,0,1,2,0,CONTROL);
+delay_ms(5000);
+warning_flag=1;
+}
+if(warning_flag==1&&dianya_zhi<=417&&dianya_zhi>=333)
+	{warning_flag=0;
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+ set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+
+}
+if(dianya_zhi<=420&&dianya_zhi>=330&&warning_flag==0)
+{
 if(gonglvshishu<90&&L_C_flag==1)
  {
 if(slave_comm[0]>0)
@@ -1930,6 +2033,7 @@ else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,1,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,1,comm_list_1[i].work_time,comm_list_1[i].group);
 change_Queue(1,20,comm_list_1,comm_list_2,slave_comm);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -1947,7 +2051,7 @@ else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,1,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,1,comm_list_2[i].work_time,comm_list_2[i].group);
 change_Queue(1,20,comm_list_1,comm_list_2,slave_comm);
-
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -1967,6 +2071,7 @@ else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,1,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,1,comm_list_1[i].work_time,comm_list_1[i].group);
 change_Queue(1,10,comm_list_1,comm_list_2,slave_comm);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -1983,6 +2088,7 @@ else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,1,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,1,comm_list_2[i].work_time,comm_list_2[i].group);
 change_Queue(1,10,comm_list_1,comm_list_2,slave_comm);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2004,6 +2110,7 @@ else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,1,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,1,comm_list_1[i].work_time,comm_list_1[i].group);
 change_Queue(1,5,comm_list_1,comm_list_2,slave_comm);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2020,6 +2127,7 @@ else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,1,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,1,comm_list_2[i].work_time,comm_list_2[i].group);
 change_Queue(1,5,comm_list_1,comm_list_2,slave_comm);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2039,7 +2147,8 @@ if(mystatus.work_status[0]==0)
 {
 GPIO_ResetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],1,mystatus.work_status[1],mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+delay_ms(TIME_TQ);
 	  return 0 ;
  }
 
@@ -2047,7 +2156,8 @@ if(wugongkvar>=mystatus.size[1])
 if(mystatus.work_status[1]==0)
 {GPIO_ResetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],1,mystatus.work_time[0],mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+delay_ms(TIME_TQ);
 	  return 0 ;
 
  }
@@ -2067,7 +2177,8 @@ if(mystatus.work_status[0]==1)
  	{
  	GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+delay_ms(TIME_TQ);
 	  	  return 0 ;
 
  }
@@ -2075,7 +2186,8 @@ if(mystatus.work_status[1]==1)
 
 {GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+delay_ms(TIME_TQ);
 	  return 0 ;
 
  }
@@ -2093,6 +2205,7 @@ if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2106,6 +2219,7 @@ if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2126,6 +2240,7 @@ if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2139,6 +2254,7 @@ if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2155,6 +2271,7 @@ if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2168,6 +2285,7 @@ if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2189,7 +2307,8 @@ if(mystatus.work_status[0]==1)
  	{
  	GPIO_SetBits(GPIOA,GPIO_Pin_0);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],0,mystatus.work_status[1],0,mystatus.work_time[1]);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+delay_ms(TIME_TQ);
 	  	  return 0 ;
 
  }
@@ -2197,7 +2316,8 @@ if(mystatus.work_status[1]==1)
 
 {GPIO_SetBits(GPIOA,GPIO_Pin_8);
  set_now_mystatus(mystatus.myid,mystatus.size[0],mystatus.size[1],mystatus.work_status[0],0,mystatus.work_time[0],0);
-      LIGHT(mystatus.work_status[0],mystatus.work_status[1],1);
+      LIGHT(mystatus.work_status[0],mystatus.work_status[1],0);
+delay_ms(TIME_TQ);
 	  return 0 ;
 
  }
@@ -2215,6 +2335,7 @@ if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2228,6 +2349,7 @@ if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2246,6 +2368,7 @@ if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2259,6 +2382,7 @@ if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2275,6 +2399,7 @@ if(comm_list_1[i].group==1)order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_1[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_1(i,comm_list_1[i].myid,comm_list_1[i].size,0,comm_list_1[i].work_time,comm_list_1[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2288,6 +2413,7 @@ if(comm_list_2[i].group==1)order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,1,
 else order_trans_rs485(mybox.myid,comm_list_2[i].myid,1,2,0,CONTROL);
 		{
 set_statuslist_2(i,comm_list_2[i].myid,comm_list_2[i].size,0,comm_list_2[i].work_time,comm_list_2[i].group);
+delay_ms(TIME_TQ);
 return 0 ;
 
 		}
@@ -2298,6 +2424,8 @@ return 0 ;
 
 
        }
+
+}
 
 }
 }

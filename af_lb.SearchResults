@@ -1,4 +1,1 @@
----- true_worktime1_flag Matches (3 in 0 files) ----
-485ANN.c (af1_lib\hardware\485ann):u8 true_worktime1_flag=0,true_worktime2_flag=0;//从机使用变量，用于标识下位机真正透切的时间点
-485ANN.c (af1_lib\hardware\485ann):		 if (mystatus.work_status[0]==1&&true_worktime1_flag==1)  //工作时间的计时
-485ANN.c (af1_lib\hardware\485ann):		   if (mystatus.work_status[0]==0&&true_worktime1_flag==0)  //工作时间清零
+---- LED0 Matches (0 in 0 files) ----

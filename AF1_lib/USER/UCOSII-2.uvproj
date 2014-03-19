@@ -348,7 +348,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\HARDWARE\LED;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\USER;..\HARDWARE\WKUP;..\HARDWARE\ADC;..\HARDWARE\DAC;..\HARDWARE\DMA;..\HARDWARE\IIC;..\HARDWARE\24CXX;..\HARDWARE\FLASH;..\UCOSII\CONFIG;..\UCOSII\CORE;..\UCOSII\PORT;..\HARDWARE\TIMER;..\HARDWARE\SRAM;..\HARDWARE\RS485;..\HARDWARE\RTC;..\STM32F10x_FWLib\inc;..\HARDWARE\485ANN;..\HARDWARE\LCD;..\HARDWARE\HT1621;..\HARDWARE\KEY;..\STM32F10x_DSP_Lib\inc</IncludePath>
+              <IncludePath>..\HARDWARE\LED;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\USER;..\HARDWARE\WKUP;..\HARDWARE\ADC;..\HARDWARE\DAC;..\HARDWARE\DMA;..\HARDWARE\IIC;..\HARDWARE\24CXX;..\HARDWARE\FLASH;..\UCOSII\CONFIG;..\UCOSII\CORE;..\UCOSII\PORT;..\HARDWARE\TIMER;..\HARDWARE\SRAM;..\HARDWARE\RS485;..\HARDWARE\RTC;..\STM32F10x_FWLib\inc;..\HARDWARE\485ANN;..\HARDWARE\LCD;..\HARDWARE\HT1621;..\HARDWARE\KEY;..\STM32F10x_DSP_Lib\inc;..\HARDWARE\WDG</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -447,6 +447,11 @@
               <FileName>lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\LCD\lcd.c</FilePath>
+            </File>
+            <File>
+              <FileName>wdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\WDG\wdg.c</FilePath>
             </File>
           </Files>
         </Group>
