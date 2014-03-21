@@ -274,6 +274,11 @@ extern u8 ligt_time;
 		{
 				RS485_RX_CNT=0;				
 		}
+			if(RS485_RX_BUF[RS485_RX_CNT-1]=='-'){RS485_RX_BUF[0]='-'; RS485_RX_CNT=1;}
+		if(RS485_RX_BUF[RS485_RX_CNT-1]=='=')
+		{			RS485_RX_CNT=0;
+
+		}	
 /***********************************************************/		
 		
 		 }  	
