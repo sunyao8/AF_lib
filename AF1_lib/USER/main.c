@@ -216,6 +216,7 @@ void Receive_task(void *pdate)//从机任务
 	 flag1=rs485_trans_order(msg);
 	 dog_clock=20;
 mybox.myid=AT24CXX_ReadOneByte(0x0010);
+mystatus.myid=mybox.myid;
 	 if(flag1==1)/***是本机信息***/
 	 	{		//LED1=!LED1;	  
 		       dog_clock=20;
